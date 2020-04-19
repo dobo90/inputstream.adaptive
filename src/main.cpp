@@ -240,6 +240,10 @@ public:
   };
   AP4_Result GetSize(AP4_LargeSize& size) override
   {
+    return AP4_ERROR_NOT_SUPPORTED;
+  };
+  AP4_Result GetSegmentSize(AP4_LargeSize& size)
+  {
     return stream_->getSize(size) ? AP4_SUCCESS : AP4_ERROR_EOS;
   };
   // AP4_Referenceable methods
@@ -1579,7 +1583,7 @@ public:
       const AP4_Size chunkSize = 16384;
       AP4_Byte buf[chunkSize];
       AP4_LargeSize sz;
-      if (AP4_SUCCEEDED(m_input->GetSize(sz)))
+      if (AP4_SUCCEEDED(dynamic_cast<AP4_DASHStream*>(m_input)->GetSegmentSize(sz)))
       {
         while (sz)
         {
