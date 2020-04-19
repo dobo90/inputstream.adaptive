@@ -1549,30 +1549,12 @@ public:
   SubtitleSampleReader(AP4_ByteStream* input,
                        AP4_UI32 streamId,
                        const std::string& codecInternalName)
-    : m_pts(0), m_streamId(streamId), m_eos(false)
+    : m_pts(0), m_streamId(streamId), m_eos(false), m_input(input)
   {
-    // read the file
-    AP4_DataBuffer result;
-    const AP4_Size chunkSize = 16384;
-    AP4_Byte buf[chunkSize];
-    AP4_LargeSize sz;
-    while (AP4_SUCCEEDED(input->GetSize(sz)))
-    {
-      while (sz)
-      {
-        AP4_Size readSize = sz > chunkSize ? chunkSize : static_cast<AP4_Size>(sz);
-        sz -= readSize;
-        if (AP4_SUCCEEDED(input->Read(buf, readSize)))
-          result.AppendData(buf, readSize);
-        else
-          break;
-      }
-    }
     if (codecInternalName == "wvtt")
       m_codecHandler = new WebVTTCodecHandler(nullptr);
     else
       m_codecHandler = new TTMLCodecHandler(nullptr);
-    m_codecHandler->Transform(0, 0, result, 1000);
   }
 
   bool EOS() const override { return m_eos; };
@@ -1589,6 +1571,32 @@ public:
     {
       m_pts = m_sample.GetCts() * 1000;
       return AP4_SUCCESS;
+    }
+    else if (m_input)
+    {
+      // read the file
+      AP4_DataBuffer result;
+      const AP4_Size chunkSize = 16384;
+      AP4_Byte buf[chunkSize];
+      AP4_LargeSize sz;
+      if (AP4_SUCCEEDED(m_input->GetSize(sz)))
+      {
+        while (sz)
+        {
+          AP4_Size readSize = sz > chunkSize ? chunkSize : static_cast<AP4_Size>(sz);
+          sz -= readSize;
+          if (AP4_SUCCEEDED(m_input->Read(buf, readSize)))
+            result.AppendData(buf, readSize);
+          else
+            break;
+        }
+      }
+      m_codecHandler->Transform(0, 0, result, 1000);
+      if (m_codecHandler->ReadNextSample(m_sample, m_sampleData))
+      {
+        m_pts = m_sample.GetCts() * 1000;
+        return AP4_SUCCESS;
+      }
     }
     m_eos = true;
     return AP4_ERROR_EOS;
@@ -1620,6 +1628,7 @@ private:
 
   AP4_Sample m_sample;
   AP4_DataBuffer m_sampleData;
+  AP4_ByteStream* m_input = nullptr;
 };
 
 /*******************************************************
