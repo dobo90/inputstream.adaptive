@@ -22,7 +22,6 @@
 
 bool WebVTT::Parse(uint64_t pts, uint32_t duration, const void *buffer, size_t buffer_size, uint64_t timescale, uint64_t ptsOffset)
 {
-  m_seekTime = 0;
   m_timescale = timescale;
   m_ptsOffset = ptsOffset;
   if (pts < ptsOffset)
@@ -151,13 +150,12 @@ bool WebVTT::Parse(uint64_t pts, uint32_t duration, const void *buffer, size_t b
 bool WebVTT::Prepare(uint64_t &pts, uint32_t &duration)
 {
   if (m_seekTime)
-  {
     for (m_pos = 0; m_pos < m_subTitles.size() && m_subTitles[m_pos].end < m_seekTime; ++m_pos);
-    m_seekTime = 0;
-  }
 
   if (m_pos >= m_subTitles.size() || !~m_subTitles[m_pos].end)
     return false;
+
+  m_seekTime = 0;
 
   SUBTITLE &sub(m_subTitles[m_pos++]);
   pts = sub.start;
@@ -183,4 +181,5 @@ void WebVTT::Reset()
 {
   m_subTitles.clear();
   m_pos = 0;
+  m_seekTime = 0;
 }
