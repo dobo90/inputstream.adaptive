@@ -137,6 +137,7 @@ CdmAdapter::CdmAdapter(
 , cdm_config_(cdm_config)
 , active_buffer_(0)
 , cdm9_(0), cdm10_(0), cdm11_(0)
+, session_active_(false)
 {
   //DCHECK(!key_system_.empty());
   Initialize();
@@ -329,10 +330,16 @@ void CdmAdapter::UpdateSession(uint32_t promise_id,
       response, response_size);
 }
 
+void CdmAdapter::SetSessionActive()
+{
+  session_active_ = true;
+}
+
 void CdmAdapter::CloseSession(uint32_t promise_id,
   const char* session_id,
   uint32_t session_id_size)
 {
+  session_active_ = false;
   exit_thread_flag = true;
   while (timer_thread_running) 
   {
@@ -507,7 +514,10 @@ cdm::Buffer* CdmAdapter::Allocate(uint32_t capacity)
 void CdmAdapter::SetTimer(int64_t delay_ms, void* context)
 {
   //LICENSERENEWAL
-  std::thread(timerfunc, shared_from_this(), delay_ms, context).detach();
+  if (session_active_)
+  {
+    std::thread(timerfunc, shared_from_this(), delay_ms, context).detach();
+  }
 }
 
 cdm::Time CdmAdapter::GetCurrentWallTime()

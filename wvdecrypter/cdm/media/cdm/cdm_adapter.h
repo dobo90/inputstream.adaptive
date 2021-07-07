@@ -109,6 +109,8 @@ class CdmAdapter : public std::enable_shared_from_this<CdmAdapter>
 		const uint8_t* response,
 		uint32_t response_size);
 
+	void SetSessionActive();
+
 	void CloseSession(uint32_t promise_id,
 		const char* session_id,
 		uint32_t session_id_size);
@@ -246,6 +248,8 @@ private:
   cdm::ContentDecryptionModule_9 *cdm9_;
   cdm::ContentDecryptionModule_10 *cdm10_;
   cdm::ContentDecryptionModule_11 *cdm11_;
+
+  std::atomic<bool> session_active_;
 
   DISALLOW_COPY_AND_ASSIGN(CdmAdapter);
 };
