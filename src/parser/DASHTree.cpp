@@ -1872,6 +1872,7 @@ void DASHTree::RefreshLiveSegments()
                     {
                       uint64_t search_pts = updRepr->segments_.Get(0)->range_begin_;
                       uint64_t misaligned = 0;
+
                       for (const auto& segment : repr->segments_.data)
                       {
                         if (misaligned)
@@ -1879,7 +1880,10 @@ void DASHTree::RefreshLiveSegments()
                           uint64_t ptsDiff = segment.range_begin_ - (&segment - 1)->range_begin_;
                           // our misalignment is small ( < 2%), let's decrement the start number
                           if (misaligned < (ptsDiff * 2 / 100))
+                          {
                             --repr->startNumber_;
+                            LOG::LogF(LOGWARNING, "Decrementing the start number because of misalignment");
+                          }
                           break;
                         }
                         if (segment.range_begin_ == search_pts)
@@ -1888,8 +1892,8 @@ void DASHTree::RefreshLiveSegments()
                         {
                           if (&repr->segments_.data.front() == &segment)
                           {
-                            --repr->startNumber_;
-                            break;
+                            LOG::LogF(LOGWARNING, "Skipping full update due to invalid mpd");
+                            return;
                           }
                           misaligned = search_pts - (&segment - 1)->range_begin_;
                         }
