@@ -195,7 +195,7 @@ bool adaptive::CDashTree::ParseManifest(const std::string& data)
   // Parse <MPD> <UTCTiming> tags
   //! @todo: needed implementation
   if (nodeMPD.child("UTCTiming"))
-    LOG::LogF(LOGWARNING, "The <UTCTiming> tag element is not supported so playback problems may occur.");
+    LOG::LogF(LOGDEBUG, "The <UTCTiming> tag element is not supported so playback problems may occur.");
 
   // Parse <MPD> <BaseURL> tag (just first, multi BaseURL not supported yet)
   std::string mpdUrl = base_url_;
@@ -1662,7 +1662,7 @@ void adaptive::CDashTree::OnUpdateSegments()
                 if (repr->Timeline().GetInitialSize() == updRepr->Timeline().GetSize() &&
                     repr->Timeline().Get(0)->startPTS_ == updRepr->Timeline().Get(0)->startPTS_)
                 {
-                  LOG::LogF(LOGDEBUG,
+                  LOG::LogF(LOGERROR,
                             "MPD update - No new segments (repr. id \"%s\", period id \"%s\")",
                             repr->GetId().data(), period->GetId().data());
                   continue;
