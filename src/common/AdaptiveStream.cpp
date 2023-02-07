@@ -542,6 +542,9 @@ bool adaptive::AdaptiveStream::parseIndexRange(PLAYLIST::CRepresentation* rep,
 
 bool adaptive::AdaptiveStream::start_stream(const uint64_t startPts)
 {
+  // lock live segment updates
+  std::lock_guard<adaptive::AdaptiveTree::TreeUpdateThread> lckUpdTree(m_tree->GetTreeUpdMutex());
+
   if (!current_rep_ || current_rep_->IsSubtitleFileStream())
     return false;
 
