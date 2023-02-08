@@ -1056,7 +1056,7 @@ static void XMLCALL start(void* data, const char* el, const char** attr)
         // We already do that so lets set our minimum updateInterval to 30s
         if (dur == 0)
           dur = 30000;
-        dash->SetUpdateInterval(static_cast<uint32_t>(dur));
+        dash->SetUpdateInterval(static_cast<uint32_t>(1000));
       }
       attr += 2;
     }

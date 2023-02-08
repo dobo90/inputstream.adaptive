@@ -133,6 +133,8 @@ else()
 endif()
 
 add_definitions(-DUNICODE -D_UNICODE)
+add_compile_options(-fsanitize=address)
+add_link_options(-fsanitize=address)
 
 include_directories(${EXPAT_INCLUDE_DIRS})
 list(APPEND DEPLIBS ${EXPAT_LIBRARIES})

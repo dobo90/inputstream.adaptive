@@ -603,6 +603,10 @@ bool AdaptiveStream::start_stream()
     return false;
   }
 
+  LOG::Log(LOGERROR, "DEBUG before sleep()");
+  std::this_thread::sleep_for(std::chrono::seconds(3));
+  LOG::Log(LOGERROR, "DEBUG after sleep()");
+
   currentPTSOffset_ = (next_segment->startPTS_ * current_rep_->timescale_ext_) /
     current_rep_->timescale_int_;
   absolutePTSOffset_ = (current_rep_->segments_.Get(0)->startPTS_ * current_rep_->timescale_ext_) /

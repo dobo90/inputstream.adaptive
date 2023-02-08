@@ -427,7 +427,9 @@ namespace adaptive
       {
         std::lock_guard<std::mutex> lck(treeMutex_);
         lastUpdated_ = std::chrono::system_clock::now();
+        LOG::LogF(LOGERROR, "DEBUG before RefreshLiveSegments()");
         RefreshLiveSegments();
+        LOG::LogF(LOGERROR, "DEBUG after RefreshLiveSegments()");
       }
     }
   }
