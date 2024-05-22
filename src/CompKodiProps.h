@@ -115,6 +115,8 @@ public:
   // \brief Get a custom delay from LIVE edge in seconds
   uint64_t GetLiveDelay() const { return m_liveDelay; }
 
+  uint32_t GetMaxBufferLength() const { return m_maxBufferLength; }
+
   /*
    * \brief Get data to "pre-initialize" the DRM, if set is represented as a string
    *        of base64 data splitted by a pipe char as: "{PSSH as base64}|{KID as base64}".
@@ -156,6 +158,7 @@ private:
   std::string m_audioLanguageOrig;
   bool m_playTimeshiftBuffer{false};
   uint64_t m_liveDelay{0};
+  uint32_t m_maxBufferLength{0};
   std::string m_drmPreInitData;
   ChooserProps m_chooserProps;
   Config m_config;

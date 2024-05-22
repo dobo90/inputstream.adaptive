@@ -626,6 +626,10 @@ bool AdaptiveStream::start_stream(const uint64_t startPts)
   if(max_buffer_length_<=assured_buffer_length_)//for incorrect settings input
     max_buffer_length_=assured_buffer_length_+4u;
 
+
+  uint32_t prop_max_buffer_length = CSrvBroker::GetKodiProps().GetMaxBufferLength();
+  if (prop_max_buffer_length)
+    max_buffer_length_ = prop_max_buffer_length;
   AllocateSegmentBuffers(max_buffer_length_);
 
   if (!thread_data_)
