@@ -84,6 +84,7 @@ void AdaptiveStream::Reset()
 
 void adaptive::AdaptiveStream::AllocateSegmentBuffers(size_t size)
 {
+  LOG::Log(LOGFATAL, "DOBO: allocating %zu segments", size);
   size++;
 
   while (size-- > 0)
@@ -846,6 +847,8 @@ bool AdaptiveStream::ensureSegment()
         m_startEvent = EVENT_TYPE::REP_CHANGE;
       }
     }
+
+    LOG::Log(LOGFATAL, "DOBO: valid/available segments: %zu, %zu", valid_segment_buffers_, available_segment_buffers_);
 
     if (valid_segment_buffers_ == 0 && available_segment_buffers_ > 0)
     {
