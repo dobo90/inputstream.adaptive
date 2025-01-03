@@ -1,0 +1,10 @@
+[package]
+name = "kodi-addon-logger"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib", "lib"]
+
+[dependencies]
+log = "0.4"
