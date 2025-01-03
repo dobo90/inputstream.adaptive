@@ -6,6 +6,10 @@ project(inputstream.adaptive)
 
 include(Helpers.cmake)
 
+include(FetchContent)
+FetchContent_Declare(Corrosion GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git GIT_TAG v0.5.2)
+FetchContent_MakeAvailable(Corrosion)
+
 option(BUILD_TESTING "Build the testing tree." ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR})
 set(CMAKE_FIND_FRAMEWORK LAST)
@@ -82,6 +86,10 @@ get_property(DEPS_NAMES_LIST GLOBAL PROPERTY GlobalSharedDepsNamesList)
 foreach(DEP_NAME ${DEPS_NAMES_LIST})
   list(APPEND ADP_ADDITIONAL_BINARY $<TARGET_FILE:${DEP_NAME}>)
 endforeach()
+
+corrosion_import_crate(MANIFEST_PATH rust/addon-depends-rs/Cargo.toml LOCKED CRATE_TYPES staticlib)
+list(APPEND DEPLIBS addon_depends_rs)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/rust/include)
 
 build_addon(inputstream.adaptive ADP DEPLIBS)
 
