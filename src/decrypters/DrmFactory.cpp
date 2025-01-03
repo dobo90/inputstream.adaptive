@@ -13,9 +13,7 @@
 #if ANDROID
 #include "widevineandroid/WVDecrypter.h"
 #else
-#ifndef TARGET_DARWIN_EMBEDDED
 #include "widevine/WVDecrypter.h"
-#endif
 #endif
 
 using namespace DRM;
@@ -31,10 +29,7 @@ IDecrypter* DRM::FACTORY::GetDecrypter(STREAM_CRYPTO_KEY_SYSTEM keySystem)
 #if ANDROID
     return new CWVDecrypterA();
 #else
-// Darwin embedded are apple platforms different than MacOS (e.g. IOS)
-#ifndef TARGET_DARWIN_EMBEDDED
     return new CWVDecrypter();
-#endif
 #endif
   }
   else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_PLAYREADY ||
