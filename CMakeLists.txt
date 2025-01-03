@@ -6,6 +6,10 @@ project(inputstream.adaptive)
 
 include(Helpers.cmake)
 
+include(FetchContent)
+FetchContent_Declare(Corrosion GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git GIT_TAG v0.5.1)
+FetchContent_MakeAvailable(Corrosion)
+
 option(BUILD_TESTING "Build the testing tree." ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR})
 set(CMAKE_FIND_FRAMEWORK LAST)
