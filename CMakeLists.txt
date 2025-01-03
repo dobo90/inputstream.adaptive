@@ -87,6 +87,10 @@ foreach(DEP_NAME ${DEPS_NAMES_LIST})
   list(APPEND ADP_ADDITIONAL_BINARY $<TARGET_FILE:${DEP_NAME}>)
 endforeach()
 
+corrosion_import_crate(MANIFEST_PATH widevine-rs/crates/widevine-ffi/Cargo.toml)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/widevine-rs/crates/widevine-ffi CRATE_TYPES staticlib)
+list(APPEND DEPLIBS widevine_ffi)
+
 build_addon(inputstream.adaptive ADP DEPLIBS)
 
 if(NOT CMAKE_CROSSCOMPILING AND BUILD_TESTING)
