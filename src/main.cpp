@@ -16,6 +16,10 @@
 #include "utils/ThreadPool.h"
 #include "utils/log.h"
 
+extern "C" void kodi_addon_logger_rs_initialize(
+    KODI_ADDON_BACKEND_HDL kodiBase,
+    void (*addon_log_msg)(const KODI_ADDON_BACKEND_HDL hdl, const int loglevel, const char* msg));
+
 using namespace PLAYLIST;
 using namespace SESSION;
 
@@ -488,6 +492,8 @@ ADDON_STATUS CMyAddon::CreateInstance(const kodi::addon::IInstanceInfo& instance
 {
   if (instance.IsType(ADDON_INSTANCE_INPUTSTREAM))
   {
+    kodi_addon_logger_rs_initialize(kodi::addon::CPrivateBase::m_interface->toKodi->kodiBase,
+                                    kodi::addon::CPrivateBase::m_interface->toKodi->addon_log_msg);
     hdl = new CInputStreamAdaptive(instance);
     return ADDON_STATUS_OK;
   }
