@@ -14,6 +14,7 @@
 #include "widevineandroid/WVDecrypter.h"
 #else
 #include "widevine/WVDecrypter.h"
+#include "playready/PlayReadyDecrypter.h"
 #endif
 
 using namespace DRM;
@@ -32,8 +33,15 @@ IDecrypter* DRM::FACTORY::GetDecrypter(STREAM_CRYPTO_KEY_SYSTEM keySystem)
     return new CWVDecrypter();
 #endif
   }
-  else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_PLAYREADY ||
-           keySystem == STREAM_CRYPTO_KEY_SYSTEM_WISEPLAY)
+  else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_PLAYREADY)
+  {
+#if ANDROID
+    return new CWVDecrypterA();
+#else
+    return new CPlayReadyDecrypter();
+#endif
+  }
+  else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_WISEPLAY)
   {
 #if ANDROID
     return new CWVDecrypterA();
