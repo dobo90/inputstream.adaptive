@@ -17,5 +17,6 @@ if(NOT CORE_SYSTEM_NAME STREQUAL ios AND NOT CORE_SYSTEM_NAME STREQUAL darwin_em
     add_subdirectory(widevineandroid)
   else()
     add_subdirectory(widevine)
+    add_subdirectory(playready)
   endif()
 endif()
