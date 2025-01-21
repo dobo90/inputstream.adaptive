@@ -91,6 +91,10 @@ corrosion_import_crate(MANIFEST_PATH widevine-rs/crates/widevine-ffi/Cargo.toml)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/widevine-rs/crates/widevine-ffi CRATE_TYPES staticlib)
 list(APPEND DEPLIBS widevine_ffi)
 
+corrosion_import_crate(MANIFEST_PATH playready-rs/crates/playready-ffi/Cargo.toml LOCKED CRATE_TYPES staticlib)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/playready-rs/crates/playready-ffi)
+list(APPEND DEPLIBS playready_ffi)
+
 build_addon(inputstream.adaptive ADP DEPLIBS)
 
 if(NOT CMAKE_CROSSCOMPILING AND BUILD_TESTING)
