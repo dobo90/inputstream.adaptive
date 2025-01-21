@@ -15,6 +15,7 @@
 #else
 #ifndef TARGET_DARWIN_EMBEDDED
 #include "widevine/WVDecrypter.h"
+#include "playready/PlayReadyDecrypter.h"
 #endif
 #endif
 
@@ -37,8 +38,16 @@ IDecrypter* DRM::FACTORY::GetDecrypter(STREAM_CRYPTO_KEY_SYSTEM keySystem)
 #endif
 #endif
   }
-  else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_PLAYREADY ||
-           keySystem == STREAM_CRYPTO_KEY_SYSTEM_WISEPLAY)
+  else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_PLAYREADY)
+  {
+#ifndef TARGET_DARWIN_EMBEDDED
+    return new CPlayReadyDecrypter();
+#endif
+#if ANDROID
+    return new CWVDecrypterA();
+#endif
+  }
+  else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_WISEPLAY)
   {
 #if ANDROID
     return new CWVDecrypterA();
