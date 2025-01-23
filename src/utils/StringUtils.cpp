@@ -279,7 +279,8 @@ bool UTILS::STRING::ToHexBytes(const std::string& str, std::vector<uint8_t>& byt
   for (int i = 0; i < str.length(); i += 2)
   {
     char* end;
-    uint8_t byte = static_cast<uint8_t>(std::strtol(str.substr(i, 2).c_str(), &end, 16));
+    std::string substr = str.substr(i, 2);
+    uint8_t byte = static_cast<uint8_t>(std::strtol(substr.c_str(), &end, 16));
     if (*end != '\0') // Conversion failed, invalid characters in hexadecimal
       return false;
 
