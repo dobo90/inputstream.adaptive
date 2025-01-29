@@ -287,9 +287,6 @@ bool adaptive::CDashTree::ParseManifest(const std::string& data)
     }
   }
 
-  if (mpdTotalDuration == 0)
-    mpdTotalDuration = m_timeShiftBufferDepth;
-
   if (mpdTotalDuration > 0)
     m_totalTime = mpdTotalDuration;
   else
