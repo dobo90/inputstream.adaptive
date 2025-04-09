@@ -3,4 +3,4 @@
 	url = https://github.com/dobo90/widevine-rs
 [submodule "playready-rs"]
 	path = playready-rs
-	url = https://github.com/dobo90/playready-rs
+	url = https://codeberg.org/dobo/playready-rs.git
