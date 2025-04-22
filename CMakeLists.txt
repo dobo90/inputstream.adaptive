@@ -12,6 +12,28 @@ include(FetchContent)
 FetchContent_Declare(Corrosion GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git GIT_TAG v0.6.1)
 FetchContent_MakeAvailable(Corrosion)
 
+option(USE_CL_LTO "Use cross language LTO" OFF)
+
+if(USE_LTO AND USE_CL_LTO)
+  message(FATAL_ERROR "USE_LTO option has to be disabled when using USE_CL_LTO")
+endif()
+
+if(USE_CL_LTO)
+  find_program(CLANG_PATH clang)
+  find_program(CLANGPP_PATH clang++)
+
+  if(NOT CLANG_PATH OR NOT CLANGPP_PATH)
+    message(FATAL_ERROR "Unable to find clang or clang++ executable")
+  endif()
+
+  set(CMAKE_C_COMPILER ${CLANG_PATH} CACHE STRING "C compiler" FORCE)
+  set(CMAKE_CXX_COMPILER ${CLANGPP_PATH} CACHE STRING "C++ compiler" FORCE)
+  set(CMAKE_LINKER_TYPE LLD CACHE STRING "Linker type" FORCE)
+
+  add_compile_options(-flto)
+  add_link_options(-flto)
+endif()
+
 option(BUILD_TESTING "Build the testing tree." ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR})
 set(CMAKE_FIND_FRAMEWORK LAST)
@@ -98,9 +120,14 @@ corrosion_import_crate(MANIFEST_PATH rust/addon-depends-rs/Cargo.toml LOCKED CRA
 list(APPEND DEPLIBS addon_depends_rs)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/rust/include)
 
+if(USE_CL_LTO)
+  corrosion_add_target_rustflags(addon_depends_rs "-Clinker-plugin-lto")
+  corrosion_add_target_rustflags(addon_depends_rs-static "-Clinker-plugin-lto")
+endif()
+
 build_addon(inputstream.adaptive ADP DEPLIBS)
 
-if(NOT CMAKE_CROSSCOMPILING AND BUILD_TESTING)
+if(NOT CMAKE_CROSSCOMPILING AND BUILD_TESTING AND NOT USE_CL_LTO)
   list(APPEND CMAKE_CTEST_ARGUMENTS "-V")
   enable_testing()
   include(FindGtest)
