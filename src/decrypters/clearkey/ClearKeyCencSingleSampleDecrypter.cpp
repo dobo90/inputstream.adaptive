@@ -142,6 +142,15 @@ CClearKeyCencSingleSampleDecrypter::CClearKeyCencSingleSampleDecrypter(
   AddSessionKey(defaultKeyId);
 }
 
+CClearKeyCencSingleSampleDecrypter::~CClearKeyCencSingleSampleDecrypter()
+{
+  if (m_singleSampleDecrypter)
+  {
+    delete m_singleSampleDecrypter;
+    m_singleSampleDecrypter = nullptr;
+  }
+}
+
 void CClearKeyCencSingleSampleDecrypter::AddSessionKey(const std::vector<uint8_t>& keyId)
 {
   if (std::find(m_keyIds.begin(), m_keyIds.end(), keyId) == m_keyIds.end())
