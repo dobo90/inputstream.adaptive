@@ -24,7 +24,7 @@ public:
                                      const std::vector<uint8_t>& defaultKeyId,
                                      const std::map<std::string, std::string>& keys,
                                      CClearKeyDecrypter* host);
-  virtual ~CClearKeyCencSingleSampleDecrypter(){};
+  virtual ~CClearKeyCencSingleSampleDecrypter();
   void AddSessionKey(const std::vector<uint8_t>& keyId);
   bool HasKeyId(const std::vector<uint8_t>& keyid);
   virtual AP4_Result SetFragmentInfo(AP4_UI32 pool_id,
