@@ -552,6 +552,10 @@ bool AdaptiveStream::parseIndexRange(PLAYLIST::CRepresentation* rep,
         sidxCount--;
         delete atom;
       }
+      else
+      {
+        delete atom;
+      }
     }
 
     if (!rep->HasInitSegment())
