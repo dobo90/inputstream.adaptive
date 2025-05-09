@@ -25,8 +25,6 @@
 #include <optional>
 #include <future>
 
-class Adaptive_CencSingleSampleDecrypter;
-
 namespace SESSION
 {
 class CStream;
@@ -60,10 +58,6 @@ public:
   virtual bool Initialize(SESSION::CStream* stream) { return true; }
 
   virtual std::vector<DRM::DRMInfo> GetInitDRMInfo() { return {}; }
-
-  virtual void SetDecrypter(std::shared_ptr<DRM::DRMSession> drmSession)
-  {
-  }
 
   /*!
    * \brief Defines if the end of the stream is reached
@@ -123,9 +117,7 @@ public:
   virtual AP4_Size GetSampleDataSize() const = 0;
   virtual const AP4_Byte* GetSampleData() const = 0;
   virtual uint64_t GetDuration() const = 0;
-  virtual bool IsEncrypted() const = 0;
   virtual bool IsStarted() const = 0;
-  virtual CryptoInfo GetReaderCryptoInfo() const { return CryptoInfo(); }
 
   /*!
    * \brief Read the sample asynchronously
