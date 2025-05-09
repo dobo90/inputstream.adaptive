@@ -40,7 +40,6 @@ struct ChooserProps
   std::string m_chooserType; // Specifies chooser type to be used
   uint32_t m_bandwidthMax{0};
   std::pair<int, int> m_resolutionMax; // Res. limit for non-protected videos (values 0 means auto)
-  std::pair<int, int> m_resolutionSecureMax; // Res. limit for DRM protected videos (values 0 means auto)
 };
 
 // Generic add-on configuration
@@ -91,9 +90,6 @@ public:
   std::string_view GetLicenseKey() const { return m_licenseKey; }
   // \brief Get custom PSSH initialization license data
   std::string_view GetLicenseData() const { return m_licenseData; }
-
-  bool IsLicensePersistentStorage() const { return m_isLicensePersistentStorage; }
-  bool IsLicenseForceSecDecoder() const { return m_isLicenseForceSecureDecoder; }
 
   std::string_view GetServerCertificate() const { return m_serverCertificate; }
   ManifestType GetManifestType() const { return m_manifestType; } // Deprecated
@@ -149,8 +145,6 @@ private:
   std::string m_licenseType;
   std::string m_licenseKey;
   std::string m_licenseData;
-  bool m_isLicensePersistentStorage{false};
-  bool m_isLicenseForceSecureDecoder{false};
   std::string m_serverCertificate;
   ManifestType m_manifestType{ManifestType::UNKNOWN}; // Deprecated
   std::string m_manifestUpdateParam; // Deprecated

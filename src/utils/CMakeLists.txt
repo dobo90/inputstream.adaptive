@@ -13,7 +13,6 @@ set(SOURCES
 set(HEADERS
   Base64Utils.h
   CharArrayParser.h
-  CryptoUtils.h
   CurlUtils.h
   DigestMD5Utils.h
   FileUtils.h

@@ -10,7 +10,6 @@
 
 #include "CommonSegAttribs.h"
 #include "SegTemplate.h"
-#include "utils/CryptoUtils.h"
 
 #ifdef INPUTSTREAM_TEST_BUILD
 #include "test/KodiStubs.h"
@@ -81,13 +80,6 @@ public:
   EncryptionState GetEncryptionState() const { return m_encryptionState; }
   void SetEncryptionState(EncryptionState encryptState) { m_encryptionState = encryptState; }
 
-  // Force the use of secure decoder only when parsed manifest specify it
-  uint64_t IsSecureDecodeNeeded() const { return m_isSecureDecoderNeeded; }
-  void SetSecureDecodeNeeded(uint64_t isSecureDecoderNeeded)
-  {
-    m_isSecureDecoderNeeded = isSecureDecoderNeeded;
-  };
-
   std::vector<uint32_t>& SegmentTimelineDuration() { return m_segmentTimelineDuration; }
   bool HasSegmentTimelineDuration() { return !m_segmentTimelineDuration.empty(); }
 
@@ -117,7 +109,6 @@ public:
     uint32_t media_{0};
     // Specify how many times the same PSSH is used between AdaptationSets or Representations
     uint32_t m_usageCount{0};
-    CryptoMode m_cryptoMode{CryptoMode::NONE};
     CAdaptationSet* adaptation_set_{nullptr};
   };
 
@@ -141,7 +132,6 @@ protected:
   uint64_t m_start{NO_VALUE};
   uint64_t m_duration{0};
   EncryptionState m_encryptionState{EncryptionState::UNENCRYPTED};
-  bool m_isSecureDecoderNeeded{false};
   std::vector<uint32_t> m_segmentTimelineDuration;
 };
 

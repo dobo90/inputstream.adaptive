@@ -41,7 +41,6 @@ void CRepresentationChooserDefault::Initialize(const ADP::KODI_PROPS::ChooserPro
   auto& settings = CSrvBroker::GetSettings();
 
   m_screenResMax = settings.GetResMax();
-  m_screenResSecureMax = settings.GetResSecureMax();
 
   m_bandwidthInitAuto = settings.IsBandwidthInitAuto();
   m_bandwidthInit = settings.GetBandwidthInit();
@@ -65,28 +64,14 @@ void CRepresentationChooserDefault::Initialize(const ADP::KODI_PROPS::ChooserPro
     m_screenResMax = props.m_resolutionMax;
   }
 
-  if (m_screenResSecureMax.first == 0 ||
-      (props.m_resolutionSecureMax.first > 0 && m_screenResSecureMax > props.m_resolutionSecureMax))
-  {
-    m_screenResSecureMax = props.m_resolutionSecureMax;
-  }
-
   LOG::Log(LOGDEBUG,
            "[Repr. chooser] Configuration\n"
            "Resolution max: %ix%i\n"
-           "Resolution max for secure decoder: %ix%i\n"
            "Bandwidth limits (bit/s): min %u, max %u\n"
            "Ignore screen resolution: %i\n"
            "Ignore screen resolution change: %i",
-           m_screenResMax.first, m_screenResMax.second, m_screenResSecureMax.first,
-           m_screenResSecureMax.second, m_bandwidthMin, m_bandwidthMax, m_ignoreScreenRes,
-           m_ignoreScreenResChange);
-}
-
-void CRepresentationChooserDefault::SetSecureSession(const bool isSecureSession)
-{
-  m_isSecureSession = isSecureSession;
-  RefreshResolution();
+           m_screenResMax.first, m_screenResMax.second, m_bandwidthMin, m_bandwidthMax,
+           m_ignoreScreenRes, m_ignoreScreenResChange);
 }
 
 void CRepresentationChooserDefault::PostInit()
@@ -140,7 +125,7 @@ void CRepresentationChooserDefault::RefreshResolution()
   m_screenHeight = m_ignoreScreenRes ? 16384 : m_screenCurrentHeight;
 
   // If set, limit resolution to user choice
-  const auto& userResLimit{m_isSecureSession ? m_screenResSecureMax : m_screenResMax};
+  const auto& userResLimit{m_screenResMax};
 
   if (userResLimit.first > 0 && userResLimit.second > 0)
   {
