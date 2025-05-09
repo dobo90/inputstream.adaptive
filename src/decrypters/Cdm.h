@@ -11,16 +11,17 @@
 #include "DrmEngineDefines.h"
 #include "utils/ResultType.h"
 
+#include <shared_mutex>
 #include <string_view>
 
 #include <kodi/c-api/addon-instance/inputstream/stream_crypto.h>
 
 namespace DRM
 {
-class IDecrypter
+class Cdm
 {
 public:
-  virtual ~IDecrypter() {}
+  virtual ~Cdm() {}
 
   /*
    * \brief Initialize the decrypter library
@@ -46,5 +47,24 @@ public:
    * \param libraryPath Filesystem path for the decrypter to locate any needed files such as CDMs
    */
   virtual void SetLibraryPath(std::string_view libraryPath) = 0;
+
+  virtual bool GetKeysFromLicenseServer(const std::vector<uint8_t>& pssh,
+                                        const std::vector<uint8_t>& kid) = 0;
+
+  std::optional<std::vector<uint8_t>> GetKey(const std::vector<uint8_t>& kid);
+
+protected:
+  void AddKey(std::vector<uint8_t> kid, std::vector<uint8_t> key);
+  std::string SendRequestToLicenseServer(const std::vector<uint8_t>& kid,
+                                         const std::vector<uint8_t>& pssh,
+                                         uint8_t* challengePtr,
+                                         size_t challengeLen);
+
+  DRM::Config m_config;
+  std::string m_strSession;
+
+private:
+  std::map<std::vector<uint8_t>, std::vector<uint8_t>> m_keys;
+  std::shared_mutex m_keysMutex;
 };
 }; // namespace DRM
