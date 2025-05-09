@@ -118,10 +118,6 @@ ADP::KODI_PROPS::CCompKodiProps::CCompKodiProps(const std::map<std::string, std:
     }
     else if (prop.first == PROP_LICENSE_FLAGS)
     {
-      if (prop.second.find("persistent_storage") != std::string::npos)
-        m_isLicensePersistentStorage = true;
-      if (prop.second.find("force_secure_decoder") != std::string::npos)
-        m_isLicenseForceSecureDecoder = true;
     }
     else if (prop.first == PROP_SERVER_CERT)
     {
@@ -223,11 +219,6 @@ ADP::KODI_PROPS::CCompKodiProps::CCompKodiProps(const std::map<std::string, std:
     }
     else if (prop.first == PROP_CHOOSER_RES_SECURE_MAX)
     {
-      std::pair<int, int> res;
-      if (STRING::GetMapValue(ADP::SETTINGS::RES_CONV_LIST, prop.second, res))
-        m_chooserProps.m_resolutionSecureMax = res;
-      else
-        LOG::Log(LOGERROR, "Resolution not valid on \"%s\" property.", prop.first.c_str());
     }
     else if (prop.first == PROP_CONFIG)
     {

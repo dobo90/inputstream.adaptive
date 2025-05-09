@@ -70,32 +70,3 @@ private:
 
   void UnlinkIncludedStreams(SESSION::CStream* stream);
 };
-
-/*******************************************************/
-/*                     VideoCodec                      */
-/*******************************************************/
-
-class ATTR_DLL_LOCAL CVideoCodecAdaptive : public kodi::addon::CInstanceVideoCodec
-{
-public:
-  CVideoCodecAdaptive(const kodi::addon::IInstanceInfo& instance);
-  CVideoCodecAdaptive(const kodi::addon::IInstanceInfo& instance, CInputStreamAdaptive* parent);
-  virtual ~CVideoCodecAdaptive();
-
-  bool Open(const kodi::addon::VideoCodecInitdata& initData) override;
-  bool Reconfigure(const kodi::addon::VideoCodecInitdata& initData) override;
-  bool AddData(const DEMUX_PACKET& packet) override;
-  VIDEOCODEC_RETVAL GetPicture(VIDEOCODEC_PICTURE& picture) override;
-  const char* GetName() override { return m_name.c_str(); };
-  void Reset() override;
-
-private:
-  enum STATE : unsigned int
-  {
-    STATE_WAIT_EXTRADATA = 1
-  };
-
-  std::shared_ptr<SESSION::CSession> m_session;
-  unsigned int m_state;
-  std::string m_name;
-};
