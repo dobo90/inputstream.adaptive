@@ -20,7 +20,7 @@
 // forwards
 namespace DRM
 {
-class IDecrypter;
+class Cdm;
 }
 
 namespace DRM
