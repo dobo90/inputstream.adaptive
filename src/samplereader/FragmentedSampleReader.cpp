@@ -378,7 +378,7 @@ std::unique_ptr<ISampleReader> CFragmentedSampleReader::CreateReaderByTrack()
   }
 
   auto newFragReader = std::make_unique<CFragmentedSampleReader>(m_lReader, selTrack);
-  // TODO: SetCdm
+  newFragReader->SetCdm(m_cdm);
 
   LOG::LogF(LOGDEBUG, "Created shared reader for audio track id %u", selTrack->GetId());
 
@@ -485,6 +485,7 @@ AP4_Result CFragmentedSampleReader::ProcessMoof(AP4_ContainerAtom* moof,
       ParseMoofPssh(moof);
       ParseTrafSgpd(traf);
 
+      std::vector<uint8_t> kid;
       bool isDefaultProtected{true};
       AP4_ContainerAtom* schi = m_protectedDesc->GetSchemeInfo()->GetSchiAtom();
       if (schi)
@@ -495,7 +496,10 @@ AP4_Result CFragmentedSampleReader::ProcessMoof(AP4_ContainerAtom* moof,
           trackEnc = AP4_DYNAMIC_CAST(AP4_CencTrackEncryption,
                                       schi->GetChild(AP4_UUID_PIFF_TRACK_ENCRYPTION_ATOM));
         if (trackEnc)
+        {
           isDefaultProtected = trackEnc->GetDefaultIsProtected() != 0;
+          kid.assign(trackEnc->GetDefaultKid(), trackEnc->GetDefaultKid() + 16);
+        }
       }
 
       // If the boxes saiz, saio, senc are missing, the stream does not conform to the specs and
@@ -507,11 +511,27 @@ AP4_Result CFragmentedSampleReader::ProcessMoof(AP4_ContainerAtom* moof,
         traf->AddChild(new AP4_SencAtom());
       }
 
-      // TODO: GetKey
-      AP4_CencSampleDecrypter* decrypter = nullptr;
-      AP4_CencSampleDecrypter::Create(m_protectedDesc, traf, *m_lReader->GetByteStream(), moof_offset,
-                                      nullptr, 0, nullptr, nullptr, decrypter);
-      m_decrypter.reset(decrypter);
+      if (m_cdm)
+      {
+        std::vector<uint8_t> key = m_cdm->GetKey(kid).value_or(std::vector<uint8_t>());
+
+        if (!key.empty())
+        {
+          AP4_CencSampleDecrypter* decrypter = nullptr;
+          AP4_CencSampleDecrypter::Create(m_protectedDesc, traf, *m_lReader->GetByteStream(), moof_offset,
+                                          key.data(), key.size(), nullptr, nullptr, decrypter);
+          m_decrypter.reset(decrypter);
+        }
+        else
+        {
+          const std::string kidStr = STRING::ToHexadecimal(kid);
+          LOG::LogF(LOGERROR, "No key in cdm for kid %s", kidStr.c_str());
+        }
+      }
+      else
+      {
+        LOG::LogF(LOGERROR, "No cdm while trying to get key");
+      }
     }
   }
   return AP4_SUCCESS;

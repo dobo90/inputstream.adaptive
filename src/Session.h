@@ -11,8 +11,8 @@
 #include "Stream.h"
 #include "common/AdaptiveStream.h"
 #include "common/AdaptiveTree.h"
+#include "decrypters/Cdm.h"
 #include "decrypters/DrmEngine.h"
-#include "decrypters/IDecrypter.h"
 #include "utils/ResultType.h"
 
 #if defined(ANDROID)

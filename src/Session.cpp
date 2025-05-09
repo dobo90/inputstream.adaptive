@@ -196,10 +196,24 @@ bool SESSION::CSession::CheckPlayableStreams(PLAYLIST::CPeriod* period)
         if (!repr->DrmInfos().empty())
         {
           kodi::addon::InputstreamInfo isInfo;
+          auto drmSession = m_drmEngine.InitializeSession(repr->DrmInfos(), {}, isInfo);
 
-          if (m_drmEngine.InitializeSession(repr->DrmInfos(), {}, isInfo))
+          if (drmSession.has_value())
           {
-            // TODO: GetKeysFromLicenseServer
+            const auto& initDrmInfo = drmSession->first;
+            auto cdm = drmSession->second;
+
+            const auto defaultKid = DRM::ConvertKidStrToBytes(initDrmInfo.defaultKid);
+            const bool gotKeys =
+                cdm != nullptr && cdm->GetKeysFromLicenseServer(initDrmInfo.initData, defaultKid);
+
+            if (!gotKeys && !defaultKid.empty())
+            {
+              LOG::LogF(LOGWARNING,
+                        "Disabled stream repr ID \"%s\", AdpSet ID \"%s\", KID: \"%s\", failed to get keys from CDM",
+                        repr->GetId().c_str(), adp->GetId().c_str(), initDrmInfo.defaultKid.c_str());
+              repr->isPlayable = false;
+            }
           }
           else
           {
@@ -662,8 +676,22 @@ bool SESSION::CSession::PrepareStream(CStream& stream)
     if (!drmSession)
       return false;
 
-    // TODO: GetKeysFromLicenseServer
-    // TODO: SetCdm
+    const auto& initDrmInfo = drmSession->first;
+    auto cdm = drmSession->second;
+
+    stream.GetReader()->SetCdm(drmSession->second);
+
+    const auto defaultKid = DRM::ConvertKidStrToBytes(initDrmInfo.defaultKid);
+    const bool gotKeys =
+        cdm != nullptr && cdm->GetKeysFromLicenseServer(initDrmInfo.initData, defaultKid);
+
+    if (!gotKeys && !defaultKid.empty())
+    {
+        LOG::LogF(LOGWARNING,
+                  "Disabled stream repr ID \"%s\", AdpSet ID \"%s\", KID: \"%s\", failed to get keys from CDM",
+                  repr->GetId().c_str(), adp->GetId().c_str(), initDrmInfo.defaultKid.c_str());
+        repr->isPlayable = false;
+    }
   }
 
   return true;
