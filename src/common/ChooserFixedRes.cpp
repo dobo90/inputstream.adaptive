@@ -28,8 +28,7 @@ void CRepresentationChooserFixedRes::Initialize(const ADP::KODI_PROPS::ChooserPr
 {
   auto& settings = CSrvBroker::GetSettings();
 
-  m_screenResMax = settings.GetResMax();
-  m_screenResSecureMax = settings.GetResSecureMax();
+  m_screenResMax = settings.GetResMax();;
 
   // Override settings with Kodi/video add-on properties
 
@@ -39,18 +38,10 @@ void CRepresentationChooserFixedRes::Initialize(const ADP::KODI_PROPS::ChooserPr
     m_screenResMax = props.m_resolutionMax;
   }
 
-  if (m_screenResSecureMax.first == 0 ||
-      (props.m_resolutionSecureMax.first > 0 && m_screenResSecureMax > props.m_resolutionSecureMax))
-  {
-    m_screenResSecureMax = props.m_resolutionSecureMax;
-  }
-
   LOG::Log(LOGDEBUG,
            "[Repr. chooser] Configuration\n"
-           "Resolution max: %ix%i\n"
-           "Resolution max for secure decoder: %ix%i",
-           m_screenResMax.first, m_screenResMax.second, m_screenResSecureMax.first,
-           m_screenResSecureMax.second);
+           "Resolution max: %ix%i\n",
+           m_screenResMax.first, m_screenResMax.second);
 }
 
 void CRepresentationChooserFixedRes::PostInit()
@@ -67,7 +58,7 @@ PLAYLIST::CRepresentation* CRepresentationChooserFixedRes::GetNextRepresentation
   if (currentRep)
     return currentRep;
 
-  std::pair<int, int> resolution{m_isSecureSession ? m_screenResSecureMax : m_screenResMax};
+  std::pair<int, int> resolution{m_screenResMax};
 
   if (resolution.first == 0) // Max limit set to "Auto"
     resolution = {m_screenCurrentWidth, m_screenCurrentHeight};

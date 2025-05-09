@@ -19,11 +19,6 @@ find_package(pugixml REQUIRED)
 find_package(Bento4 REQUIRED)
 find_package(NlohmannJSON REQUIRED)
 
-# JNI android wrapper library
-if(CORE_SYSTEM_NAME STREQUAL android)
-  find_package(LibAndroidJNI REQUIRED)
-endif()
-
 if(CMAKE_CXX_COMPILER MATCHES "arm-webos")
   add_compile_definitions(TARGET_WEBOS=1)
 endif()
@@ -36,11 +31,7 @@ if(WIN32)
   # Allow unicode build for windows api
   add_definitions(-DUNICODE -D_UNICODE)
   # dlfcn implementation for windows, allow to use e.g. dlopen as POSIX-compatible way
-  find_package(dlfcn-win32 REQUIRED)
-  list(APPEND DEPLIBS ${dlfcn-win32_LIBRARIES})
-  include_directories(${dlfcn-win32_INCLUDE_DIRS})
 else()
-  list(APPEND DEPLIBS ${CMAKE_DL_LIBS})
   # Required on some old linux platforms to use macro like PRIu64
   add_definitions(-D__STDC_FORMAT_MACROS)
   # Force symbol visibility hidden by default for operative systems different than Windows,
@@ -62,7 +53,6 @@ list(APPEND ADP_HEADERS ${HEADERS_LIST})
 include_directories(${INCLUDES}
                     ${KODI_INCLUDE_DIR}/.. # Hack way with "/..", need bigger Kodi cmake rework to match right include ways (becomes done in future)
                     ${NLOHMANNJSON_INCLUDE_DIRS}
-                    $<$<STREQUAL:${CORE_SYSTEM_NAME},android>:${LIBANDROIDJNI_INCLUDE_DIRS}>
                     src/
 )
 
@@ -80,11 +70,6 @@ list(APPEND DEPLIBS ${PUGIXML_LIBRARIES}
                     mpegts
                     webm_parser
 )
-
-if(CORE_SYSTEM_NAME STREQUAL android)
-  list(APPEND DEPLIBS ${LIBANDROIDJNI_LIBRARIES})
-  list(APPEND DEPLIBS log) # android log library, used by libandroidjni to print logs
-endif()
 
 # Add additional dependencies
 get_property(DEPS_FOLDERS_LIST GLOBAL PROPERTY GlobalDepsFoldersList)

@@ -226,15 +226,6 @@ void ADP::KODI_PROPS::CCompKodiProps::InitStage1(const std::map<std::string, std
       else
         LOG::Log(LOGERROR, "Resolution not valid on \"%s\" property.", prop.first.c_str());
     }
-    else if (prop.first == PROP_CHOOSER_RES_SECURE_MAX)
-    {
-      LogProp(prop.first, prop.second);
-      std::pair<int, int> res;
-      if (STRING::GetMapValue(ADP::SETTINGS::RES_CONV_LIST, prop.second, res))
-        m_chooserProps.m_resolutionSecureMax = res;
-      else
-        LOG::Log(LOGERROR, "Resolution not valid on \"%s\" property.", prop.first.c_str());
-    }
     else if (prop.first == PROP_CONFIG)
     {
       LogProp(prop.first, prop.second);
@@ -332,18 +323,6 @@ void ADP::KODI_PROPS::CCompKodiProps::ParseConfig(const std::string& data)
     else if (configName == "internal_cookies" && jValue.is_boolean())
     {
       m_config.internalCookies = jValue.get<bool>();
-    }
-    else if (configName == "check_hdcp" && jValue.is_string())
-    {
-      std::string_view value = jValue.get<std::string_view>();
-
-      if (value.empty() || value == "default")
-        m_config.hdcpCheck = HdcpCheckType::DEFAULT;
-      else if (value == "license")
-        m_config.hdcpCheck = HdcpCheckType::LICENSE;
-      else
-        LOG::LogF(LOGERROR, "Value \"%s\" isnt supported on \"%s\" config of \"%s\" property",
-                  value.data(), configName.c_str(), PROP_MANIFEST_CONFIG.data());
     }
     else if (configName == "resolution_limit" && jValue.is_string())
     {
@@ -520,33 +499,15 @@ void ADP::KODI_PROPS::CCompKodiProps::ParseDrmOldProps(
 
   // As legacy behaviour its expected to force the unique drm configuration available
   drmCfg.priority = 1;
-  // As legacy behaviour force single session (as in the old ISA versions <= v21)
-  drmCfg.isForceSingleSession = true;
 
   // Parse DRM properties
   const bool isRedacted = !CSrvBroker::GetSettings().IsDebugVerbose();
   std::string propValue;
 
-  if (STRING::GetMapValue(props, PROP_LICENSE_FLAGS, propValue))
-  {
-    LogProp(PROP_LICENSE_FLAGS, propValue);
-
-    if (propValue.find("persistent_storage") != std::string::npos)
-      drmCfg.isPersistentStorage = true;
-    if (propValue.find("force_secure_decoder") != std::string::npos)
-      drmCfg.isSecureDecoderEnabled = true;
-  }
-
   if (STRING::GetMapValue(props, PROP_LICENSE_DATA, propValue))
   {
     LogProp(PROP_LICENSE_DATA, propValue, isRedacted);
     drmCfg.initData = propValue;
-  }
-
-  if (STRING::GetMapValue(props, PROP_PRE_INIT_DATA, propValue))
-  {
-    LogProp(PROP_PRE_INIT_DATA, propValue, isRedacted);
-    drmCfg.preInitData = propValue;
   }
 
   // Parse DRM license properties
@@ -718,33 +679,8 @@ bool ADP::KODI_PROPS::CCompKodiProps::ParseDrmConfig(const std::string& data)
 
     LogDrmJsonDictKeys("main", jValue, keySystem);
 
-    if (jValue.contains("force_single_session") && jValue["force_single_session"].is_boolean())
-      drmCfg.isForceSingleSession = jValue["force_single_session"].get<bool>();
-
-    if (jValue.contains("persistent_storage") && jValue["persistent_storage"].is_boolean())
-      drmCfg.isPersistentStorage = jValue["persistent_storage"].get<bool>();
-
-    if (jValue.contains("secure_decoder") && jValue["secure_decoder"].is_boolean())
-      drmCfg.isSecureDecoderEnabled = jValue["secure_decoder"].get<bool>();
-
     if (jValue.contains("init_data") && jValue["init_data"].is_string())
       drmCfg.initData = jValue["init_data"].get<std::string>();
-
-    if (jValue.contains("pre_init_data") && jValue["pre_init_data"].is_string())
-      drmCfg.preInitData = jValue["pre_init_data"].get<std::string>();
-
-    if (jValue.contains("optional_key_req_params") && jValue["optional_key_req_params"].is_object())
-    {
-      for (auto& [paramName, jValue] : jData.items()) // Iterate JSON dict
-      {
-        if (!jValue.is_string())
-        {
-          LOG::LogF(LOGERROR, "The DRM parameter \"optional_key_req_params\" contains invalid values");
-          break;
-        }
-        drmCfg.optKeyReqParams.emplace(paramName, jValue.get<std::string>());
-      }
-    }
 
     if (jValue.contains("priority") && jValue["priority"].is_number_unsigned())
       drmCfg.priority = jValue["priority"].get<uint32_t>();
