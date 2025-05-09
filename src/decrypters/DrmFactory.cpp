@@ -10,7 +10,7 @@
 
 using namespace DRM;
 
-IDecrypter* DRM::FACTORY::GetDecrypter(STREAM_CRYPTO_KEY_SYSTEM keySystem)
+Cdm* DRM::FACTORY::GetCdm(STREAM_CRYPTO_KEY_SYSTEM keySystem)
 {
   return nullptr;
 }
