@@ -25,7 +25,6 @@ public:
   ~CRepresentationChooserManualOSD() override {}
 
   virtual void Initialize(const ADP::KODI_PROPS::ChooserProps& props) override;
-  virtual void SetSecureSession(const bool isSecureSession) override;
   virtual void PostInit() override;
 
   virtual StreamSelection GetStreamSelectionMode() override { return m_streamSelectionMode; }
@@ -42,7 +41,6 @@ protected:
   int m_screenHeight{0};
 
   std::pair<int, int> m_screenResMax; // Max resolution for non-protected video content
-  std::pair<int, int> m_screenResSecureMax; // Max resolution for protected video content
 };
 
 } // namespace CHOOSER

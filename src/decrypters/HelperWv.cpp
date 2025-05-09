@@ -429,9 +429,7 @@ bool DRM::WvUnwrapLicense(std::string_view wrapper,
                           const std::map<std::string, std::string>& params,
                           std::string_view contentType,
                           std::string data,
-                          std::string& dataOut,
-                          int& hdcpResLimit,
-                          uint16_t& hdcpVerLimit)
+                          std::string& dataOut)
 {
   // The license response must be in binary data format
   // but many services have a proprietary implementations therefore
@@ -528,90 +526,6 @@ bool DRM::WvUnwrapLicense(std::string_view wrapper,
       }
 
       data = jDataObjValue->get<std::string>();
-
-      if (STRING::KeyExists(params, "path_hdcp_res"))
-      {
-        bool isJsonHdcpTraverse{false};
-        if (STRING::KeyExists(params, "path_hdcp_res_traverse"))
-          isJsonHdcpTraverse = STRING::ToLower(params.at("path_hdcp_res_traverse")) == "true";
-
-        const njson* jHdcpObjValue;
-        if (isJsonHdcpTraverse)
-          jHdcpObjValue = JSON::GetValueTraversePaths(jData, params.at("path_hdcp_res"));
-        else
-          jHdcpObjValue = JSON::GetValueAtPath(jData, params.at("path_hdcp_res"));
-
-        if (!jHdcpObjValue)
-        {
-          LOG::LogF(LOGWARNING, "Unable to parse JSON HDCP resolution, path \"%s\" not found",
-                    params.at("path_hdcp_res").c_str());
-        }
-        else if (jHdcpObjValue->is_number_float())
-        {
-          hdcpResLimit = static_cast<int>(jHdcpObjValue->get<float>());
-        }
-        else if (jHdcpObjValue->is_number())
-        {
-          hdcpResLimit = jHdcpObjValue->get<int>();
-        }
-        else if (jHdcpObjValue->is_string())
-        {
-          std::string_view resValue = jHdcpObjValue->get<std::string_view>();
-
-          auto pos = resValue.find('x');
-          if (pos != std::string_view::npos) // Expected format width x height (e.g. "1280x720")
-          {
-            const int width = STRING::ToInt32(resValue.substr(0, pos));
-            const int height = STRING::ToInt32(resValue.substr(pos + 1));
-            hdcpResLimit = width * height;
-          }
-          else // Expected format multiplication of width x height (e.g. 921600 stands for "1280x720")
-          {
-            hdcpResLimit = STRING::ToInt32(resValue);
-          }
-        }
-        else
-          LOG::LogF(LOGERROR,
-                    "Unable to parse JSON HDCP resolution, wrong data type on path \"%s\"",
-                    params.at("path_hdcp_res").c_str());
-      }
-
-      if (STRING::KeyExists(params, "path_hdcp_ver"))
-      {
-        bool isJsonHdcpTraverse{false};
-        if (STRING::KeyExists(params, "path_hdcp_ver_traverse"))
-          isJsonHdcpTraverse = STRING::ToLower(params.at("path_hdcp_ver_traverse")) == "true";
-
-        const njson* jHdcpObjValue;
-        if (isJsonHdcpTraverse)
-          jHdcpObjValue = JSON::GetValueTraversePaths(jData, params.at("path_hdcp_ver"));
-        else
-          jHdcpObjValue = JSON::GetValueAtPath(jData, params.at("path_hdcp_ver"));
-
-        if (!jHdcpObjValue)
-        {
-          LOG::LogF(LOGWARNING, "Unable to parse JSON HDCP version, path \"%s\" not found",
-                    params.at("path_hdcp_ver").c_str());
-        }
-        else if (jHdcpObjValue->is_number_float())
-        {
-          hdcpVerLimit = static_cast<int>(jHdcpObjValue->get<float>() * 10);
-        }
-        else if (jHdcpObjValue->is_number())
-        {
-          hdcpVerLimit = jHdcpObjValue->get<int>();
-        }
-        else if (jHdcpObjValue->is_string())
-        {
-          // Try convert the string value e.g. "HDCP_NONE" --> 0, "HDCP_V2_2" --> 22
-          hdcpVerLimit = STRING::GetNumbers(jHdcpObjValue->get<std::string_view>());
-        }
-        else
-        {
-          LOG::LogF(LOGERROR, "Unable to parse JSON HDCP version, wrong data type on path \"%s\"",
-                    params.at("path_hdcp_ver").c_str());
-        }
-      }
 
       if (isAuto && BASE64::IsValidBase64(data))
         wrappers.emplace_back(Wrapper::BASE64);
@@ -742,24 +656,4 @@ int DRM::ParseXLimitVideoHeader(std::string_view value)
   {
     return STRING::ToInt32(value);
   }
-}
-
-const char* DRM::KeyStatusToStr(const KeyStatus status)
-{
-  if (status == KeyStatus::USABLE)
-    return "USABLE";
-  if (status == KeyStatus::EXPIRED)
-    return "EXPIRED";
-  if (status == KeyStatus::OUTPUT_NOT_ALLOWED)
-    return "OUTPUT_NOT_ALLOWED";
-  if (status == KeyStatus::PENDING)
-    return "PENDING";
-  if (status == KeyStatus::INTERNAL_ERROR)
-    return "INTERNAL_ERROR";
-  if (status == KeyStatus::USABLE_IN_FUTURE)
-    return "USABLE_IN_FUTURE";
-  if (status == KeyStatus::UNKNOWN)
-    return "UNKNOWN";
-
-  return "UNHANDLED_VALUE";
 }

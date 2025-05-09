@@ -27,87 +27,6 @@ namespace DRM
 struct Config;
 }
 
-//! @todo: cleanup to extend the namespace to the other things
-namespace DRM
-{
-enum class KeyStatus
-{
-  UNKNOWN,
-  USABLE,
-  EXPIRED,
-  OUTPUT_NOT_ALLOWED,
-  PENDING,
-  INTERNAL_ERROR,
-  USABLE_IN_FUTURE
-};
-
-struct KeyInfo
-{
-  bool operator==(KeyInfo const& other) const { return kid == other.kid; };
-  std::vector<uint8_t> kid;
-  KeyStatus status{KeyStatus::UNKNOWN};
-};
-
-const char* KeyStatusToStr(const KeyStatus status);
-
-} // namespace DRM
-
-enum class CdmMessageType
-{
-  UNKNOWN,
-  SESSION_MESSAGE,
-  EVENT_KEY_REQUIRED,
-};
-
-struct CdmMessage
-{
-  std::string sessionId;
-  CdmMessageType type{CdmMessageType::UNKNOWN};
-  std::vector<uint8_t> data;
-  uint32_t status{0};
-};
-
-class ATTR_DLL_LOCAL IWVObserver // Observer called by IWVSubject interface
-{
-public:
-  virtual ~IWVObserver() = default;
-  virtual void OnNotify(const CdmMessage& message) = 0;
-  virtual void OnKeyStatusChangeNotify(const std::string& sessionId,
-                                       const std::vector<DRM::KeyInfo>& keysInfo) = 0;
-};
-
-class ATTR_DLL_LOCAL IWVSubject // Subject to make callbacks to IWVObserver interfaces
-{
-public:
-  virtual ~IWVSubject() = default;
-  virtual void AttachObserver(IWVObserver* observer) = 0;
-  virtual void DetachObserver(IWVObserver* observer) = 0;
-  virtual void NotifyObservers(const CdmMessage& message) = 0;
-  virtual void NotifyOnKeyStatusChange(const std::string& sessionId,
-                                       const std::vector<DRM::KeyInfo>& keysInfo) = 0;
-};
-
-template<class T>
-class ATTR_DLL_LOCAL IWVCdmAdapter : public IWVSubject
-{
-public:
-  virtual ~IWVCdmAdapter() = default;
-
-  virtual std::shared_ptr<T> GetCDM() = 0;
-
-  virtual const DRM::Config& GetConfig() = 0;
-
-  virtual void SetCodecInstance(void* instance) {}
-  virtual void ResetCodecInstance() {}
-
-  virtual std::string_view GetKeySystem() = 0;
-
-  virtual std::string_view GetLibraryPath() const { return ""; }
-  //! @todo: add here this method for convenience needed investigate better to better cleanup,
-  //! also Load/Save certificate methods need a full code cleanup
-  virtual void SaveServiceCertificate() {}
-};
-
 namespace DRM
 {
 
@@ -151,9 +70,7 @@ bool WvUnwrapLicense(std::string_view wrapper,
                      const std::map<std::string, std::string>& params,
                      std::string_view contentType,
                      std::string data,
-                     std::string& dataOut,
-                     int& hdcpResLimit,
-                     uint16_t& hdcpVerLimit);
+                     std::string& dataOut);
 
 void TranslateLicenseUrlPh(std::string& url,
                            const std::vector<uint8_t>& challenge,
