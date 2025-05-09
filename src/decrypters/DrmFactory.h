@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "IDecrypter.h"
+#include "Cdm.h"
 
 #include <memory>
 
@@ -26,6 +26,6 @@ DRM::Config CreateDRMConfig(std::string_view keySystem, const ADP::KODI_PROPS::D
 
 namespace FACTORY
 {
-std::shared_ptr<DRM::IDecrypter> GetDecrypter(STREAM_CRYPTO_KEY_SYSTEM keySystem);
+std::shared_ptr<DRM::Cdm> GetCdm(STREAM_CRYPTO_KEY_SYSTEM keySystem);
 }
 } // namespace DRM
