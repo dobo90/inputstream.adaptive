@@ -25,11 +25,6 @@ CInputStreamAdaptive::CInputStreamAdaptive(const kodi::addon::IInstanceInfo& ins
 ADDON_STATUS CInputStreamAdaptive::CreateInstance(const kodi::addon::IInstanceInfo& instance,
                                                   KODI_ADDON_INSTANCE_HDL& hdl)
 {
-  if (instance.IsType(ADDON_INSTANCE_VIDEOCODEC))
-  {
-    hdl = new CVideoCodecAdaptive(instance, this);
-    return ADDON_STATUS_OK;
-  }
   return ADDON_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -260,8 +255,8 @@ bool CInputStreamAdaptive::OpenStream(int streamid)
   }
 
   uint16_t psshSetPos = stream->m_adStream.getRepresentation()->m_psshSetPos;
-  reader->SetDecrypter(m_session->GetSingleSampleDecryptor(psshSetPos),
-                       m_session->GetDecrypterCaps(psshSetPos));
+  reader->UpdateSampleDescription();
+  // TODO: SetCdm
 
   stream->SetReader(std::move(reader));
 
@@ -296,35 +291,6 @@ bool CInputStreamAdaptive::OpenStream(int streamid)
   m_session->EnableStream(stream, true);
 
   bool isInfoChanged = stream->GetReader()->GetInformation(stream->m_info);
-
-  uint16_t cdmSessionIndex = stream->m_adStream.getRepresentation()->m_psshSetPos;
-
-  if (stream->m_isEncrypted && m_session->IsCDMSessionSecurePath(cdmSessionIndex))
-  {
-    LOG::Log(LOGDEBUG, "OpenStream(%d): Create secure crypto session", streamid);
-
-    // StreamCryptoSession enable the use of ISA VideoCodecAdaptive decoder
-    kodi::addon::StreamCryptoSession cryptoSession;
-    cryptoSession.SetKeySystem(m_session->GetCryptoKeySystem());
-
-    const char* sessionId(m_session->GetCDMSession(cdmSessionIndex));
-    cryptoSession.SetSessionId(sessionId);
-
-    if (m_session->GetDecrypterCaps(cdmSessionIndex).flags &
-        DRM::DecrypterCapabilites::SSD_SUPPORTS_DECODING)
-      stream->m_info.SetFeatures(INPUTSTREAM_FEATURE_DECODE);
-    else
-      stream->m_info.SetFeatures(INPUTSTREAM_FEATURE_NONE);
-
-    if (m_session->GetDecrypterCaps(cdmSessionIndex).flags &
-        DRM::DecrypterCapabilites::SSD_SECURE_DECODER)
-      cryptoSession.SetFlags(STREAM_CRYPTO_FLAG_SECURE_DECODER);
-    else
-      cryptoSession.SetFlags(STREAM_CRYPTO_FLAG_NONE);
-
-    stream->m_info.SetCryptoSession(cryptoSession);
-    isInfoChanged = true;
-  }
 
   return isInfoChanged;
 }
@@ -366,32 +332,9 @@ DEMUX_PACKET* CInputStreamAdaptive::DemuxRead(void)
       const AP4_UI08* pData(sr->GetSampleData());
       bool srHaveData{iSize > 0 && pData};
 
-      if (sr->IsEncrypted() && srHaveData)
-      {
-        const unsigned int numSubSamples(*(reinterpret_cast<const unsigned int*>(pData)));
-        pData += sizeof(numSubSamples);
-        p = AllocateEncryptedDemuxPacket(iSize, numSubSamples);
-        std::memcpy(p->cryptoInfo->clearBytes, pData, numSubSamples * sizeof(uint16_t));
-        pData += (numSubSamples * sizeof(uint16_t));
-        std::memcpy(p->cryptoInfo->cipherBytes, pData, numSubSamples * sizeof(uint32_t));
-        pData += (numSubSamples * sizeof(uint32_t));
-        std::memcpy(p->cryptoInfo->iv, pData, 16);
-        pData += 16;
-        std::memcpy(p->cryptoInfo->kid, pData, 16);
-        pData += 16;
-        iSize -= static_cast<AP4_Size>(pData - sr->GetSampleData());
-        CryptoInfo cryptoInfo = sr->GetReaderCryptoInfo();
-        p->cryptoInfo->numSubSamples = numSubSamples;
-        p->cryptoInfo->cryptBlocks = cryptoInfo.m_cryptBlocks;
-        p->cryptoInfo->skipBlocks = cryptoInfo.m_skipBlocks;
-        p->cryptoInfo->mode = static_cast<uint16_t>(cryptoInfo.m_mode);
-        p->cryptoInfo->flags = 0;
-      }
-      else
-        p = AllocateDemuxPacket(iSize);
-
       if (srHaveData)
       {
+        p = AllocateDemuxPacket(iSize);
         m_lastPts = sr->PTS();
         p->dts = static_cast<double>(sr->DTS());
         p->pts = static_cast<double>(sr->PTS());
@@ -528,103 +471,6 @@ bool CInputStreamAdaptive::SeekChapter(int ch)
   return m_session ? m_session->SeekChapter(ch) : false;
 }
 #endif
-/*****************************************************************************************************/
-
-CVideoCodecAdaptive::CVideoCodecAdaptive(const kodi::addon::IInstanceInfo& instance)
-  : CInstanceVideoCodec(instance),
-    m_session(nullptr),
-    m_state(0),
-    m_name("inputstream.adaptive.decoder")
-{
-}
-
-CVideoCodecAdaptive::CVideoCodecAdaptive(const kodi::addon::IInstanceInfo& instance,
-                                         CInputStreamAdaptive* parent)
-  : CInstanceVideoCodec(instance), m_session(parent->GetSession()), m_state(0)
-{
-}
-
-CVideoCodecAdaptive::~CVideoCodecAdaptive()
-{
-}
-
-bool CVideoCodecAdaptive::Open(const kodi::addon::VideoCodecInitdata& initData)
-{
-  if (!m_session || !m_session->GetDecrypter())
-    return false;
- 
-  if ((initData.GetCodecType() == VIDEOCODEC_H264 || initData.GetCodecType() == VIDEOCODEC_AV1) &&
-      !initData.GetExtraDataSize() && !(m_state & STATE_WAIT_EXTRADATA))
-  {
-    LOG::Log(LOGINFO, "VideoCodec::Open: Wait ExtraData");
-    m_state |= STATE_WAIT_EXTRADATA;
-    return true;
-  }
-  m_state &= ~STATE_WAIT_EXTRADATA;
-
-  LOG::Log(LOGINFO, "VideoCodec::Open");
-
-  m_name = "inputstream.adaptive";
-  switch (initData.GetCodecType())
-  {
-    case VIDEOCODEC_VP8:
-      m_name += ".vp8";
-      break;
-    case VIDEOCODEC_H264:
-      m_name += ".h264";
-      break;
-    case VIDEOCODEC_VP9:
-      m_name += ".vp9";
-      break;
-    case VIDEOCODEC_AV1:
-      m_name += ".av1";
-      break;
-    default:
-      break;
-  }
-  m_name += ".decoder";
-
-  std::string sessionId(initData.GetCryptoSession().GetSessionId());
-  Adaptive_CencSingleSampleDecrypter* ssd(m_session->GetSingleSampleDecrypter(sessionId));
-
-  return m_session->GetDecrypter()->OpenVideoDecoder(
-      ssd, initData.GetCStructure());
-}
-
-bool CVideoCodecAdaptive::Reconfigure(const kodi::addon::VideoCodecInitdata& initData)
-{
-  return false;
-}
-
-bool CVideoCodecAdaptive::AddData(const DEMUX_PACKET& packet)
-{
-  if (!m_session || !m_session->GetDecrypter())
-    return false;
-
-  return m_session->GetDecrypter()->DecryptAndDecodeVideo(
-             dynamic_cast<kodi::addon::CInstanceVideoCodec*>(this), &packet) != VC_ERROR;
-}
-
-VIDEOCODEC_RETVAL CVideoCodecAdaptive::GetPicture(VIDEOCODEC_PICTURE& picture)
-{
-  if (!m_session || !m_session->GetDecrypter())
-    return VIDEOCODEC_RETVAL::VC_ERROR;
-
-  static VIDEOCODEC_RETVAL vrvm[] = {VIDEOCODEC_RETVAL::VC_NONE, VIDEOCODEC_RETVAL::VC_ERROR,
-                                     VIDEOCODEC_RETVAL::VC_BUFFER, VIDEOCODEC_RETVAL::VC_PICTURE,
-                                     VIDEOCODEC_RETVAL::VC_EOF};
-
-  return vrvm[m_session->GetDecrypter()->VideoFrameDataToPicture(
-      dynamic_cast<kodi::addon::CInstanceVideoCodec*>(this), &picture)];
-}
-
-void CVideoCodecAdaptive::Reset()
-{
-  if (!m_session || !m_session->GetDecrypter())
-    return;
-
-  m_session->GetDecrypter()->ResetVideo();
-}
 
 /*****************************************************************************************************/
 

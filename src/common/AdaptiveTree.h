@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "utils/CryptoUtils.h"
 #include "AdaptationSet.h"
 #include "Period.h"
 #include "Representation.h"
@@ -75,8 +74,6 @@ public:
 
   std::vector<std::string_view> m_supportedKeySystems;
   std::string location_;
-
-  CryptoMode m_cryptoMode{CryptoMode::NONE};
 
   AdaptiveTree() = default;
   AdaptiveTree(const AdaptiveTree& left);

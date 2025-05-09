@@ -1276,11 +1276,6 @@ PLAYLIST::EncryptionType adaptive::CHLSTree::ProcessEncryption(
         m_currentDefaultKID = STRING::ToHexadecimal(parser.GetKeyIds()[0]);
     }
 
-    if (encryptMethod == "SAMPLE-AES-CTR")
-      m_cryptoMode = CryptoMode::AES_CTR;
-    else if (encryptMethod == "SAMPLE-AES")
-      m_cryptoMode = CryptoMode::AES_CBC;
-
     return EncryptionType::WIDEVINE;
   }
 
@@ -1323,11 +1318,6 @@ PLAYLIST::EncryptionType adaptive::CHLSTree::ProcessEncryption(
           LOG::LogF(LOGERROR, "Incorret KEYID tag format");
       }
     }
-
-    if (encryptMethod == "SAMPLE-AES-CTR")
-      m_cryptoMode = CryptoMode::AES_CTR;
-    else if (encryptMethod == "SAMPLE-AES")
-      m_cryptoMode = CryptoMode::AES_CBC;
 
     return EncryptionType::CLEARKEY;
   }
