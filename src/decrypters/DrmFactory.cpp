@@ -10,18 +10,9 @@
 
 #include "CompKodiProps.h"
 #include "Helpers.h"
-#include "clearkey/ClearKeyDecrypter.h"
 #include "utils/Base64Utils.h"
 #include "utils/StringUtils.h"
 #include "utils/log.h"
-
-#if ANDROID
-#include "widevineandroid/WVDecrypter.h"
-#else
-#ifndef TARGET_DARWIN_EMBEDDED
-#include "widevine/WVDecrypter.h"
-#endif
-#endif
 
 #include <kodi/addon-instance/inputstream/StreamCrypto.h>
 
@@ -69,7 +60,6 @@ DRM::Config DRM::CreateDRMConfig(std::string_view keySystem, const ADP::KODI_PRO
   DRM::Config cfg;
 
   cfg.keySystem = keySystem;
-  cfg.isPersistentStorage = propCfg.isPersistentStorage;
   cfg.optKeyReqParams = propCfg.optKeyReqParams;
   cfg.isNewConfig = propCfg.isNewConfig;
 
@@ -104,28 +94,5 @@ DRM::Config DRM::CreateDRMConfig(std::string_view keySystem, const ADP::KODI_PRO
 
 std::shared_ptr<DRM::IDecrypter> DRM::FACTORY::GetDecrypter(STREAM_CRYPTO_KEY_SYSTEM keySystem)
 {
-  if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_CLEARKEY)
-  {
-    return std::make_shared<CClearKeyDecrypter>();
-  }
-  else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_WIDEVINE)
-  {
-#if ANDROID
-    return std::make_shared<CWVDecrypterA>();
-#else
-// Darwin embedded are apple platforms different than MacOS (e.g. IOS)
-#ifndef TARGET_DARWIN_EMBEDDED
-    return std::make_shared<CWVDecrypter>();
-#endif
-#endif
-  }
-  else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_PLAYREADY ||
-           keySystem == STREAM_CRYPTO_KEY_SYSTEM_WISEPLAY)
-  {
-#if ANDROID
-    return std::make_shared<CWVDecrypterA>();
-#endif
-  }
-
   return nullptr;
 }
