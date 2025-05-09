@@ -80,8 +80,6 @@ protected:
                          std::vector<PLAYLIST::ProtectionScheme>& reprProtSchemes,
                          PLAYLIST::CRepresentation& repr);
 
-  std::optional<bool> ParseTagContentProtectionSecDec(pugi::xml_node nodeParent);
-
   uint32_t ParseAudioChannelConfig(pugi::xml_node node);
   virtual int64_t ResolveUTCTiming(pugi::xml_node node);
 
