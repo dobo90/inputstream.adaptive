@@ -47,7 +47,6 @@ public:
   AP4_Size GetSampleDataSize() const override { return GetPacketSize(); }
   const AP4_Byte* GetSampleData() const override { return GetPacketData(); }
   uint64_t GetDuration() const override { return (TSReader::GetDuration() * 100) / 9; }
-  bool IsEncrypted() const override { return false; }
 
 private:
   uint32_t m_typeMask{0}; //Bit representation of INPUTSTREAM_TYPES

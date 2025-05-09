@@ -19,10 +19,6 @@
 #include <kodi/platform/android/System.h>
 #endif
 
-#include <memory>
-
-class Adaptive_CencSingleSampleDecrypter;
-
 namespace SESSION
 {
 class ATTR_DLL_LOCAL CSession : public adaptive::AdaptiveStreamObserver
