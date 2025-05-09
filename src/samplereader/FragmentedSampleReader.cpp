@@ -22,6 +22,7 @@
 #include "decrypters/Helpers.h"
 #include "utils/Bento4Utils.h"
 #include "utils/CharArrayParser.h"
+#include "utils/StringUtils.h"
 #include "utils/Utils.h"
 #include "utils/log.h"
 
@@ -317,7 +318,7 @@ std::unique_ptr<ISampleReader> CFragmentedSampleReader::CreateReaderByTrack()
 
   auto newFragReader = std::make_unique<CFragmentedSampleReader>(m_lReader, selTrack);
   newFragReader->SetDefaultKid(m_defaultKey);
-  // TODO: SetCdm
+  newFragReader->SetCdm(m_cdm);
 
   LOG::LogF(LOGDEBUG, "Created shared reader for audio track id %u", selTrack->GetId());
 
@@ -446,11 +447,27 @@ AP4_Result CFragmentedSampleReader::ProcessMoof(AP4_ContainerAtom* moof,
         traf->AddChild(new AP4_SencAtom());
       }
 
-      // TODO: GetKey
-      AP4_CencSampleDecrypter* decrypter = nullptr;
-      AP4_CencSampleDecrypter::Create(m_protectedDesc, traf, *m_lReader->GetByteStream(), moof_offset,
-                                      nullptr, 0, nullptr, nullptr, decrypter);
-      m_decrypter.reset(decrypter);
+      if (m_cdm)
+      {
+        std::vector<uint8_t> key = m_cdm->GetKey(m_defaultKey).value_or(std::vector<uint8_t>());
+
+        if (!key.empty())
+        {
+          AP4_CencSampleDecrypter* decrypter = nullptr;
+          AP4_CencSampleDecrypter::Create(m_protectedDesc, traf, *m_lReader->GetByteStream(), moof_offset,
+                                          key.data(), key.size(), nullptr, nullptr, decrypter);
+          m_decrypter.reset(decrypter);
+        }
+        else
+        {
+          const std::string kidStr = STRING::ToHexadecimal(m_defaultKey);
+          LOG::LogF(LOGERROR, "No key in cdm for kid %s", kidStr.c_str());
+        }
+      }
+      else
+      {
+        LOG::LogF(LOGERROR, "No cdm while trying to get key");
+      }
     }
   }
   return AP4_SUCCESS;

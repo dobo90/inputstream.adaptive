@@ -20,6 +20,8 @@
 #include <kodi/addon-instance/Inputstream.h>
 #endif
 
+#include "decrypters/Cdm.h"
+
 #include <cstdint>
 #include <optional>
 #include <future>
@@ -119,6 +121,7 @@ public:
   virtual const AP4_Byte* GetSampleData() const = 0;
   virtual uint64_t GetDuration() const = 0;
   virtual bool IsStarted() const = 0;
+  virtual void SetCdm(std::shared_ptr<DRM::Cdm> cdm) {}
 
   /*!
    * \brief Read the sample asynchronously

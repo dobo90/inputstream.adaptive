@@ -101,7 +101,7 @@ bool DRM::CDRMEngine::Initialize()
   }
 
   // Get all DRM supported by the platform in use to determine which keysystems are supported
-  std::vector<std::shared_ptr<DRM::IDecrypter>> drms = FACTORY::GetDecrypters();
+  std::vector<std::shared_ptr<DRM::Cdm>> drms = FACTORY::GetCdms();
 
   std::string decrypterPath = CSrvBroker::GetSettings().GetDecrypterPath();
   if (decrypterPath.empty())
@@ -115,7 +115,10 @@ bool DRM::CDRMEngine::Initialize()
   // Initialize DRMs
   for (auto it = drms.begin(); it != drms.end();)
   {
-    if (!(*it)->Initialize()) // Failed to initialize DRM, delete it and go on
+    const auto drmCfg = CSrvBroker::GetKodiProps().GetDrmConfig((*it)->GetKeySystem());
+    const auto drmConfig = DRM::CreateDRMConfig((*it)->GetKeySystem(), drmCfg);
+
+    if (!(*it)->Initialize(drmConfig, decrypterPath)) // Failed to initialize DRM, delete it and go on
     {
       LOG::LogF(LOGERROR, "Unable to initialize %s DRM", (*it)->GetName().c_str());
       it = drms.erase(it);
@@ -130,7 +133,7 @@ bool DRM::CDRMEngine::Initialize()
   {
     for (auto& drm : drms)
     {
-      if (drm->IsKeySystemSupported(ks))
+      if (drm->GetKeySystem() == ks)
         m_drms.emplace_back(ks, drm);
     }
   }
@@ -239,7 +242,7 @@ bool DRM::CDRMEngine::InitializeSession(std::vector<DRM::DRMInfo> drmInfos,
     ExtractStreamProtectionData(repr, adp, drmInfo);
   }
 
-  std::shared_ptr<DRM::IDecrypter> drm = GetDrmInstance(m_keySystem);
+  std::shared_ptr<DRM::Cdm> drm = GetDrmInstance(m_keySystem);
   if (!drm)
   {
     m_status = EngineStatus::DRM_ERROR;
@@ -458,7 +461,7 @@ bool DRM::CDRMEngine::HasKeySystemSupport(std::string_view keySystem) const
                      [&keySystem](const DRMInstance& a) { return a.keySystem == keySystem; });
 }
 
-std::shared_ptr<DRM::IDecrypter> DRM::CDRMEngine::GetDrmInstance(std::string_view ks) const
+std::shared_ptr<DRM::Cdm> DRM::CDRMEngine::GetDrmInstance(std::string_view ks) const
 {
   auto it = std::find_if(m_drms.cbegin(), m_drms.cend(),
                          [&ks](const DRMInstance& d) { return d.keySystem == ks; });

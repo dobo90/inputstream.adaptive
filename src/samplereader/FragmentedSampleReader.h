@@ -9,7 +9,7 @@
 #pragma once
 
 #include "SampleReader.h"
-#include "decrypters/IDecrypter.h"
+#include "decrypters/Cdm.h"
 
 #include <bento4/Ap4.h>
 #include <bento4/Ap4LinearReader.h>
@@ -113,6 +113,7 @@ public:
   int64_t GetPTSDiff() const override { return m_ptsDiff; }
   bool GetFragmentInfo(uint64_t& duration) override;
   uint32_t GetTimeScale() const override { return m_track->GetMediaTimeScale(); }
+  void SetCdm(std::shared_ptr<DRM::Cdm> cdm) override { m_cdm = cdm; }
 
   /*!
    * \brief Create a new reader by sharing the same data reader and segment management (AdaptiveStream).
@@ -151,6 +152,7 @@ private:
   std::vector<uint8_t> m_defaultKey;
   AP4_ProtectedSampleDescription* m_protectedDesc{nullptr};
   std::shared_ptr<AP4_CencSampleDecrypter> m_decrypter;
+  std::shared_ptr<DRM::Cdm> m_cdm;
 
   std::shared_ptr<CLinearReader> m_lReader;
 };
