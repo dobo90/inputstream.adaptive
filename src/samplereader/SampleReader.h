@@ -20,6 +20,8 @@
 #include <kodi/addon-instance/Inputstream.h>
 #endif
 
+#include "decrypters/Cdm.h"
+
 #include <future>
 
 namespace SESSION
@@ -92,6 +94,7 @@ public:
   virtual void SetStreamType(INPUTSTREAM_TYPE type, int streamId) {}
   virtual bool RemoveStreamType(INPUTSTREAM_TYPE type) { return true; };
   virtual bool IsStarted() const = 0;
+  virtual void SetCdm(std::shared_ptr<DRM::Cdm> cdm) {}
 
   /*!
    * \brief Read the sample asynchronously

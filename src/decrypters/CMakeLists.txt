@@ -1,4 +1,5 @@
 set(SOURCES
+  Cdm.cpp
   DrmEngine.cpp
   DrmFactory.cpp
   Helpers.cpp
@@ -7,13 +8,13 @@ set(SOURCES
 )
 
 set(HEADERS
+  Cdm.h
   DrmEngine.h
   DrmEngineDefines.h
   DrmFactory.h
   Helpers.h
   HelperPr.h
   HelperWv.h
-  IDecrypter.h
 )
 
 add_dir_sources(SOURCES HEADERS)

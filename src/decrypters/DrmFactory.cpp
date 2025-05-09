@@ -92,7 +92,7 @@ DRM::Config DRM::CreateDRMConfig(std::string_view keySystem, const ADP::KODI_PRO
   return cfg;
 }
 
-std::shared_ptr<DRM::IDecrypter> DRM::FACTORY::GetDecrypter(STREAM_CRYPTO_KEY_SYSTEM keySystem)
+std::shared_ptr<DRM::Cdm> DRM::FACTORY::GetCdm(STREAM_CRYPTO_KEY_SYSTEM keySystem)
 {
   return nullptr;
 }
