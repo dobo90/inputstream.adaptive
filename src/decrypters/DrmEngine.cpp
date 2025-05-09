@@ -150,7 +150,7 @@ bool DRM::CDRMEngine::Initialize()
   }
 
   // Get all DRM supported by the platform in use to determine which keysystems are supported
-  std::vector<std::shared_ptr<DRM::IDecrypter>> drms = FACTORY::GetDecrypters();
+  std::vector<std::shared_ptr<DRM::Cdm>> drms = FACTORY::GetCdms();
 
   std::string decrypterPath = CSrvBroker::GetSettings().GetDecrypterPath();
   if (decrypterPath.empty())
@@ -164,7 +164,10 @@ bool DRM::CDRMEngine::Initialize()
   // Initialize DRMs
   for (auto it = drms.begin(); it != drms.end();)
   {
-    if (!(*it)->Initialize()) // Failed to initialize DRM, delete it and go on
+    const auto drmCfg = CSrvBroker::GetKodiProps().GetDrmConfig((*it)->GetKeySystem());
+    const auto drmConfig = DRM::CreateDRMConfig((*it)->GetKeySystem(), drmCfg);
+
+    if (!(*it)->Initialize(drmConfig, decrypterPath)) // Failed to initialize DRM, delete it and go on
     {
       LOG::LogF(LOGERROR, "Unable to initialize %s DRM", (*it)->GetName().c_str());
       it = drms.erase(it);
@@ -179,7 +182,7 @@ bool DRM::CDRMEngine::Initialize()
   {
     for (auto& drm : drms)
     {
-      if (drm->IsKeySystemSupported(ks))
+      if (drm->GetKeySystem() == ks)
         m_drms.emplace_back(ks, drm);
     }
   }
@@ -193,10 +196,10 @@ bool DRM::CDRMEngine::Initialize()
   return true;
 }
 
-std::optional<std::pair<DRMInfo, std::shared_ptr<DRM::IDecrypter>>> DRM::CDRMEngine::
-    InitializeSession(std::vector<DRM::DRMInfo> manifestDrmInfos,
-                      std::vector<DRM::DRMInfo> mediaDrmInfos,
-                      kodi::addon::InputstreamInfo& streamInfo)
+std::optional<std::pair<DRMInfo, std::shared_ptr<DRM::Cdm>>> DRM::CDRMEngine::InitializeSession(
+    std::vector<DRM::DRMInfo> manifestDrmInfos,
+    std::vector<DRM::DRMInfo> mediaDrmInfos,
+    kodi::addon::InputstreamInfo& streamInfo)
 {
   const auto& kodiProps = CSrvBroker::GetKodiProps();
   
@@ -250,7 +253,7 @@ std::optional<std::pair<DRMInfo, std::shared_ptr<DRM::IDecrypter>>> DRM::CDRMEng
   }
 
   const auto drmPropCfg = kodiProps.GetDrmConfig(m_keySystem);
-  std::optional<std::pair<DRMInfo, std::shared_ptr<DRM::IDecrypter>>> session;
+  std::optional<std::pair<DRMInfo, std::shared_ptr<DRM::Cdm>>> session;
 
   for (size_t drmInfoIdx = 0; drmInfoIdx < selDrmInfos.size(); ++drmInfoIdx)
   {
@@ -305,7 +308,7 @@ std::optional<std::pair<DRMInfo, std::shared_ptr<DRM::IDecrypter>>> DRM::CDRMEng
     if (drmInfo.defaultKid.empty())
       LOG::Log(LOGWARNING, "Cannot get default KID from DRM info, decryption can fail");
 
-    std::shared_ptr<DRM::IDecrypter> drm = GetDrmInstance(m_keySystem);
+    std::shared_ptr<DRM::Cdm> drm = GetDrmInstance(m_keySystem);
     if (!drm)
     {
       m_status = EngineStatus::DRM_ERROR;
@@ -457,7 +460,7 @@ bool DRM::CDRMEngine::HasKeySystemSupport(std::string_view keySystem) const
                      [&keySystem](const DRMInstance& a) { return a.keySystem == keySystem; });
 }
 
-std::shared_ptr<DRM::IDecrypter> DRM::CDRMEngine::GetDrmInstance(std::string_view ks) const
+std::shared_ptr<DRM::Cdm> DRM::CDRMEngine::GetDrmInstance(std::string_view ks) const
 {
   auto it = std::find_if(m_drms.cbegin(), m_drms.cend(),
                          [&ks](const DRMInstance& d) { return d.keySystem == ks; });
