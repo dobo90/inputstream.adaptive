@@ -16,7 +16,6 @@
 #include "SrvBroker.h"
 #include "Stream.h"
 #include "common/AdaptationSet.h"
-#include "common/AdaptiveDecrypter.h"
 #include "common/Representation.h"
 #include "utils/Base64Utils.h"
 #include "utils/GUIUtils.h"
@@ -62,40 +61,6 @@ DRM::DRMInfo* GetDRMInfoByKS(std::vector<DRM::DRMInfo>& drmInfos, std::string_vi
     return &(*itDrmInfo);
 
   return nullptr;
-}
-
-// \brief Query DRM decrypter to get capabilities and set it to session.
-// \return True if has success, otherwise false.
-bool GetCapabilities(const std::optional<bool> isForceSecureDecoder,
-                     const std::optional<bool> drmCfgIsSecureDecoderEnabled,
-                     const std::vector<uint8_t>& defaultKid,
-                     DRMSession& session)
-{
-  auto& caps = session.capabilities;
-  session.drm->GetCapabilities(session.decrypter, defaultKid, caps, session.mediaType);
-
-  if (caps.flags & DRM::DecrypterCapabilites::SSD_INVALID)
-  {
-    return false;
-  }
-  else if (caps.flags & DRM::DecrypterCapabilites::SSD_SECURE_PATH)
-  {
-    // Allow to disable the secure decoder
-    bool disableSecureDecoder = CSrvBroker::GetSettings().IsDisableSecureDecoder();
-    // but, DRM config can override it
-    if (drmCfgIsSecureDecoderEnabled.has_value())
-      disableSecureDecoder = !*drmCfgIsSecureDecoderEnabled;
-    // but, external config can override all others (e.g. manifest)
-    if (isForceSecureDecoder.has_value())
-      disableSecureDecoder = !*isForceSecureDecoder;
-    if (disableSecureDecoder)
-    {
-      LOG::Log(LOGDEBUG, "DRM configured with secure decoder disabled");
-      caps.flags &= ~DRM::DecrypterCapabilites::SSD_SECURE_DECODER;
-    }
-  }
-
-  return true;
 }
 } // unnamed namespace
 
@@ -150,8 +115,6 @@ bool DRM::CDRMEngine::Initialize()
   // Initialize DRMs
   for (auto it = drms.begin(); it != drms.end();)
   {
-    (*it)->SetLibraryPath(decrypterPath);
-
     if (!(*it)->Initialize()) // Failed to initialize DRM, delete it and go on
     {
       LOG::LogF(LOGERROR, "Unable to initialize %s DRM", (*it)->GetName().c_str());
@@ -181,99 +144,10 @@ bool DRM::CDRMEngine::Initialize()
   return true;
 }
 
-bool DRM::CDRMEngine::PreInitializeDRM(DRMSession& session)
-{
-  auto& kodiProps = CSrvBroker::GetKodiProps();
-
-  const auto propDrmCfg = kodiProps.GetDrmConfig(KS_WIDEVINE);
-
-  if (!propDrmCfg.priority.has_value() || propDrmCfg.priority != 1 || propDrmCfg.preInitData.empty())
-    return false;
-
-  if (!Initialize())
-    return false;
-
-  // Pre-initialize the DRM is available for Widevine only.
-  // Since the manifest will be downloaded later its assumed that
-  // the manifest support the DRM and that the priority is set to 1.
-  if (!HasKeySystemSupport(KS_WIDEVINE))
-    return false;
-
-  LOG::Log(LOGDEBUG, "Pre-initialize crypto session");
-  std::vector<uint8_t> initData;
-  std::vector<uint8_t> kidData;
-  // Parse the init data (PSSH, KID)
-  size_t posSplitter = propDrmCfg.preInitData.find("|");
-  if (posSplitter != std::string::npos)
-  {
-    initData = BASE64::Decode(propDrmCfg.preInitData.substr(0, posSplitter));
-    kidData = BASE64::Decode(propDrmCfg.preInitData.substr(posSplitter + 1));
-  }
-
-  if (initData.empty() || kidData.empty())
-  {
-    LOG::LogF(LOGERROR, "Invalid \"pre_init_data\" parameter, the data have this format: "
-                        "{PSSH as base64}|{KID as base64}");
-    m_status = EngineStatus::DRM_ERROR;
-    return false;
-  }
-
-  m_keySystem = KS_WIDEVINE;
-
-  std::shared_ptr<DRM::IDecrypter> drm = GetDrmInstance(m_keySystem);
-  if (!drm)
-  {
-    m_status = EngineStatus::DRM_ERROR;
-    LOG::LogF(LOGERROR, "Cannot get the DRM instance for keysystem %s", m_keySystem.c_str());
-    GUI::ErrorDialog(GUI::GetLocalizedString(30303));
-    return false;
-  }
-
-  LOG::LogF(LOGDEBUG, "Initializing session with KID: %s", STRING::ToHexadecimal(kidData).c_str());
-
-  DRM::Config drmCfg = CreateDRMConfig(m_keySystem, kodiProps.GetDrmConfig(m_keySystem));
-
-  auto dec = drm->CreateSingleSampleDecrypter(drmCfg, kidData, CryptoMode::AES_CTR);
-
-  if (!dec)
-  {
-    LOG::Log(LOGERROR, "Failed to initialize the %s DRM decrypter", drm->GetName().c_str());
-    m_status = EngineStatus::DECRYPTER_ERROR;
-    return false;
-  }
-
-  const SResult ret = dec->CreateSession(initData, "", true);
-
-  if (ret.IsFailed())
-  {
-    LOG::LogF(LOGERROR, "Failed to create the DRM session");
-    m_status = EngineStatus::DRM_ERROR;
-    GUI::ErrorDialog(ret.Message());
-    return false;
-  }
-
-  session.id = dec->GetSessionId();
-  session.challenge = drm->GetChallengeB64Data(dec);
-  session.drm = drm;
-  session.decrypter = dec;
-#ifndef ANDROID
-  // On android is not possible add the default KID key used to open DRM
-  // then dont add this DRM session, since must be reinitialized
-  m_sessions.emplace_back(session);
-#endif
-
-  m_isPreinitialized = true;
-
-  return true;
-}
-
 bool DRM::CDRMEngine::InitializeSession(std::vector<DRM::DRMInfo> drmInfos,
-                                        DRM::DRMMediaType mediaType,
-                                        std::optional<bool> isForceSecureDecoder,
                                         kodi::addon::InputstreamInfo& streamInfo,
                                         PLAYLIST::CRepresentation* repr,
                                         PLAYLIST::CAdaptationSet* adp,
-                                        bool canCleanupSessions,
                                         DRM::DRMInfo& initDrmInfo)
 {
   if (drmInfos.empty())
@@ -365,203 +239,25 @@ bool DRM::CDRMEngine::InitializeSession(std::vector<DRM::DRMInfo> drmInfos,
     ExtractStreamProtectionData(repr, adp, drmInfo);
   }
 
-  const std::vector<uint8_t> drmInfoKidBytes = DRM::ConvertKidStrToBytes(drmInfo.defaultKid);
-
-  if (m_isPreinitialized && m_sessions.size() == 1)
+  std::shared_ptr<DRM::IDecrypter> drm = GetDrmInstance(m_keySystem);
+  if (!drm)
   {
-    // Widevine only, when the CDM is preinitialized for non-android systems
-    // the session has been created with a custom PSSH/KID and it should
-    // be assumed that there is a single session for all streams.
-    // In order to reuse this session is needed to add the current KID.
-    if (!m_sessions[0].drm->HasLicenseKey(m_sessions[0].decrypter, drmInfoKidBytes))
-    {
-      m_sessions[0].decrypter->AddKeyId(drmInfoKidBytes);
-      m_sessions[0].decrypter->SetDefaultKeyId(drmInfoKidBytes);
-    }
+    m_status = EngineStatus::DRM_ERROR;
+    LOG::LogF(LOGERROR, "Cannot get the DRM instance for keysystem %s", m_keySystem.c_str());
+    GUI::ErrorDialog(GUI::GetLocalizedString(30303));
+    return false;
   }
-
-  // Check whether it is possible to reuse an existing DRM session
-  // its recommended to use separate sessions when a/v media types have different KIDs
-  // to avoid possible decryption problems that usually affect android devices (corrupted/pixellated video)
-  DRMSession* session{nullptr};
-  for (DRMSession& s : m_sessions)
-  {
-    bool isReuseSession{false};
-    const std::optional<bool> hasKey = s.drm->HasLicenseKey(s.decrypter, drmInfoKidBytes);
-
-    // forced single session, allow to share same session (also with different media types)
-    if (drmPropCfg.isForceSingleSession && (!hasKey.has_value() || *hasKey))
-    {
-      isReuseSession = true;
-    }
-    // share same session when: KID is the same, otherwise check if there is license key by media type
-    else if ((!s.kid.empty() && s.kid == drmInfo.defaultKid) ||
-             (hasKey.has_value() && *hasKey && s.mediaType == mediaType))
-    {
-      isReuseSession = true;
-    }
-    if (isReuseSession)
-    {
-      session = &s;
-      break;
-    }
-  }
-
-  // No reausable DRM session, create a new one
-  if (!session)
-  {
-    if (canCleanupSessions)
-      DeleteSessionsByType(mediaType);
-
-    std::shared_ptr<DRM::IDecrypter> drm = GetDrmInstance(m_keySystem);
-    if (!drm)
-    {
-      m_status = EngineStatus::DRM_ERROR;
-      LOG::LogF(LOGERROR, "Cannot get the DRM instance for keysystem %s", m_keySystem.c_str());
-      GUI::ErrorDialog(GUI::GetLocalizedString(30303));
-      return false;
-    }
-
-    DRMSession newSes;
-    newSes.drm = drm;
-    newSes.mediaType = mediaType;
-    newSes.kid = drmInfo.defaultKid;
-
-    DRM::Config drmCfg = DRM::CreateDRMConfig(m_keySystem, drmPropCfg);
-
-    newSes.decrypter = newSes.drm->CreateSingleSampleDecrypter(
-        drmCfg, drmInfoKidBytes,
-        drmInfo.cryptoMode == CryptoMode::NONE ? CryptoMode::AES_CTR : drmInfo.cryptoMode);
-
-    if (!newSes.decrypter)
-    {
-      m_status = EngineStatus::DECRYPTER_ERROR;
-      LOG::Log(LOGERROR, "Failed to initialize the %s DRM decrypter",
-               newSes.drm->GetName().c_str());
-      GUI::ErrorDialog(GUI::GetLocalizedString(30303));
-      return false;
-    }
-
-    const SResult ret =
-        newSes.decrypter->CreateSession(drmInfo.initData, drmInfo.licenseServerUri, false);
-
-    if (ret.IsFailed())
-    {
-      LOG::LogF(LOGERROR, "Failed to create the DRM session");
-      m_status = EngineStatus::DRM_ERROR;
-      GUI::ErrorDialog(ret.Message());
-      return false;
-    }
-
-    newSes.id = newSes.decrypter->GetSessionId();
-
-    if (!GetCapabilities(isForceSecureDecoder, drmPropCfg.isSecureDecoderEnabled, drmInfoKidBytes,
-                         newSes))
-    {
-      m_status = EngineStatus::DECRYPTER_ERROR;
-      return false;
-    }
-
-    m_sessions.emplace_back(newSes);
-    session = &m_sessions.back();
-    LOG::Log(LOGDEBUG, "Initialized new DRM session (ID: %s, KID: %s)", session->id.c_str(),
-             drmInfo.defaultKid.c_str());
-  }
-  else
-  {
-    // Although we reuse the same session (and decryptor) this create each time a new DRMSession,
-    // with the only purpose of differentiating (and caching) the "capabilities", since different KIDs can
-    // correspond to different "capabilities", access to capabilities could be improved in the future,
-    // perhaps by moving them within the decryptor itself and make an appropriate query inteface so that
-    // also other components can query e.g. FragmentedSampleReader, there are potentials to clean various code
-    DRMSession newSes;
-    newSes.id = session->id;
-    newSes.drm = session->drm;
-    newSes.decrypter = session->decrypter;
-    newSes.mediaType = mediaType;
-    newSes.kid = drmInfo.defaultKid;
-
-    if (drmInfo.defaultKid == session->kid) // Same KID same capabilities
-    {
-      newSes.capabilities = session->capabilities;
-    }
-    else
-    {
-      if (!GetCapabilities(isForceSecureDecoder, drmPropCfg.isSecureDecoderEnabled, drmInfoKidBytes,
-                           newSes))
-      {
-        m_status = EngineStatus::DECRYPTER_ERROR;
-        return false;
-      }
-    }
-
-    m_sessions.emplace_back(newSes);
-    session = &m_sessions.back();
-    LOG::Log(LOGDEBUG, "Reused existing DRM session (ID: %s, KID: %s)", session->id.c_str(),
-             drmInfo.defaultKid.c_str());
-  }
-
-  auto& caps = session->capabilities;
 
   // Create crypto session
   kodi::addon::StreamCryptoSession cryptoSession;
 
-  cryptoSession.SetSessionId(session->id);
-  // Set the key system will enable the crypto session to kodi decoders (e.g. ffmpeg)
-  if (caps.flags & DRM::DecrypterCapabilites::SSD_SECURE_PATH)
-    cryptoSession.SetKeySystem(KSToCryptoKeySystem(m_keySystem));
-
-  if (caps.flags & DRM::DecrypterCapabilites::SSD_SECURE_PATH &&
-      caps.flags & DRM::DecrypterCapabilites::SSD_SUPPORTS_DECODING)
-  {
-    LOG::Log(LOGDEBUG, "Secure crypto session enabled to DRM session (ID: %s)",
-             session->id.c_str());
-    streamInfo.SetFeatures(INPUTSTREAM_FEATURE_DECODE);
-  }
-  else
-    streamInfo.SetFeatures(INPUTSTREAM_FEATURE_NONE);
-
-  if (caps.flags & DRM::DecrypterCapabilites::SSD_SECURE_PATH &&
-      caps.flags & DRM::DecrypterCapabilites::SSD_SECURE_DECODER)
-  {
-    // Enable the ISA VideoCodecAdaptive decoder
-    LOG::Log(LOGDEBUG, "Secure crypto decoder enabled to DRM session (ID: %s)",
-             session->id.c_str());
-    cryptoSession.SetFlags(STREAM_CRYPTO_FLAG_SECURE_DECODER);
-  }
-  else
-    cryptoSession.SetFlags(STREAM_CRYPTO_FLAG_NONE);
+  streamInfo.SetFeatures(INPUTSTREAM_FEATURE_NONE);
+  cryptoSession.SetFlags(STREAM_CRYPTO_FLAG_NONE);
 
   streamInfo.SetCryptoSession(cryptoSession);
 
   initDrmInfo = drmInfo;
   return true;
-}
-
-const DRMSession* DRM::CDRMEngine::GetSession(const std::string& id) const
-{
-  if (id.empty())
-    return nullptr;
-
-  for (const auto& session : m_sessions)
-  {
-    if (session.id == id)
-      return &session;
-  }
-  return nullptr;
-}
-
-const DRMSession* DRM::CDRMEngine::GetSession(const std::string& id, const std::string& kid) const
-{
-  if (id.empty())
-    return nullptr;
-
-  for (const auto& session : m_sessions)
-  {
-    if (session.id == id && session.kid == kid)
-      return &session;
-  }
-  return nullptr;
 }
 
 bool DRM::CDRMEngine::ConfigureClearKey(std::vector<DRM::DRMInfo>& drmInfos)
@@ -579,7 +275,6 @@ bool DRM::CDRMEngine::ConfigureClearKey(std::vector<DRM::DRMInfo>& drmInfos)
     return false;
 
   // Get info from any drm info item, since should be the same
-  const CryptoMode cryptoMode = drmInfos[0].cryptoMode;
   const std::string defaultKid = drmInfos[0].defaultKid;
 
   if (kodiProps.GetDrmConfigs().size() == 1) // Single config (CK)
@@ -629,7 +324,6 @@ bool DRM::CDRMEngine::ConfigureClearKey(std::vector<DRM::DRMInfo>& drmInfos)
 
   DRM::DRMInfo drmInfo;
   drmInfo.keySystem = KS_CLEARKEY;
-  drmInfo.cryptoMode = cryptoMode;
   drmInfo.defaultKid = defaultKid;
   drmInfo.licenseServerUri = licenseUri;
   drmInfos.emplace_back(drmInfo);
@@ -758,16 +452,6 @@ void DRM::CDRMEngine::ExtractStreamProtectionData(PLAYLIST::CRepresentation* rep
   stream.Disable();
 }
 
-void DRM::CDRMEngine::DeleteSessionsByType(const DRMMediaType mediaType)
-{
-  // Despite this will delete sessions, the shared IDecrypter/Adaptive_CencSingleSampleDecrypter
-  // might still be in use, for example on CVideoCodecAdaptive, so shared uses can be deleted at later time
-  m_sessions.erase(std::remove_if(m_sessions.begin(), m_sessions.end(),
-                                  [mediaType](const DRMSession& session)
-                                  { return session.mediaType == mediaType; }),
-                   m_sessions.end());
-}
-
 bool DRM::CDRMEngine::HasKeySystemSupport(std::string_view keySystem) const
 {
   return std::any_of(m_drms.cbegin(), m_drms.cend(),
@@ -784,6 +468,5 @@ std::shared_ptr<DRM::IDecrypter> DRM::CDRMEngine::GetDrmInstance(std::string_vie
 void DRM::CDRMEngine::Dispose()
 {
   LOG::Log(LOGDEBUG, "Dispose DRM Engine");
-  m_sessions.clear();
   m_drms.clear();
 }

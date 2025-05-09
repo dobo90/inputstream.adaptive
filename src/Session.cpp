@@ -12,7 +12,6 @@
 #include "CompSettings.h"
 #include "SrvBroker.h"
 #include "aes_decrypter.h"
-#include "common/AdaptiveDecrypter.h"
 #include "common/AdaptiveTreeFactory.h"
 #include "common/Chooser.h"
 #include "common/ReprSelector.h"
@@ -99,16 +98,6 @@ SResult SESSION::CSession::Initialize(std::string manifestUrl)
   auto& kodiProps = CSrvBroker::GetKodiProps();
   std::map<std::string, std::string> manifestHeaders = kodiProps.GetManifestHeaders();
 
-  DRM::DRMSession session;
-  // Pre-initialize the DRM allow to generate the challenge and session ID data
-  // used to make licensed manifest requests
-  if (m_drmEngine.PreInitializeDRM(session))
-  {
-    // The following are custom headers that must be handled through a proxy server
-    manifestHeaders["challengeB64"] = STRING::URLEncode(session.challenge);
-    manifestHeaders["sessionId"] = session.id;
-  }
-
   URL::RemovePipePart(manifestUrl); // No pipe char uses, must be used Kodi properties only
 
   URL::AppendParameters(manifestUrl, kodiProps.GetManifestParams());
@@ -187,72 +176,10 @@ bool SESSION::CSession::CheckPlayableStreams(PLAYLIST::CPeriod* period)
           kodi::addon::InputstreamInfo isInfo;
           DRM::DRMInfo initDrmInfo;
 
-          DRM::DRMMediaType drmMediaType{DRM::DRMMediaType::UNKNOWN};
-          const StreamType sType = adp->GetStreamType();
-
-          if (sType == StreamType::VIDEO || sType == StreamType::VIDEO_AUDIO)
-            drmMediaType = DRM::DRMMediaType::VIDEO;
-          else if (sType == StreamType::AUDIO)
-            drmMediaType = DRM::DRMMediaType::AUDIO;
-          else
+          if (m_drmEngine.InitializeSession(repr->DrmInfos(), isInfo, repr.get(),
+                                            adp.get(), initDrmInfo))
           {
-            LOG::LogF(LOGWARNING, "Stream media type \"%i\" is not supported by the DRM engine",
-                      static_cast<int>(sType));
-            continue;
-          }
-
-          if (m_drmEngine.InitializeSession(repr->DrmInfos(), drmMediaType,
-                                            period->IsSecureDecodeNeeded(), isInfo, repr.get(),
-                                            adp.get(), false, initDrmInfo))
-          {
-            if (!isInfo.GetCryptoSession().GetSessionId().empty())
-            {
-              const auto session = m_drmEngine.GetSession(isInfo.GetCryptoSession().GetSessionId(),
-                                                          initDrmInfo.defaultKid);
-              if (session)
-              {
-                //! @todo: HACK REQUIRED BECAUSE ---> Secure path on audio stream is not implemented for CDM Widevine ONLY (non-android) <---
-                //! since audio streams that require Secure path decoder cannot be played
-                //! we have no way to distinguish which ones they are other than to do a KID test with the DRM for each stream,
-                //! this is an expensive method that could open many DRM sessions which will not be unused for playback.
-                //! When in a future this will be implemented, all this code should be cleanup and removed
-                //! and then leave it to CInputStreamAdaptive::OpenStream -> PrepareStream
-                //! the task to initialize DRM session only to the requested streams.
-                //! It can be tested e.g. with some Am@zon videos
-                auto& caps = session->capabilities;
-
-                if (!session->drm->IsSecureDecoderAudioSupported() &&
-                    adp->GetStreamType() == StreamType::AUDIO &&
-                    caps.flags & DRM::DecrypterCapabilites::SSD_SECURE_PATH)
-                {
-                  LOG::Log(LOGWARNING,
-                           "Disabled stream repr ID \"%s\", AdpSet ID \"%s\", "
-                           "Secure path decoder on audio stream is not supported",
-                           repr->GetId().c_str(), adp->GetId().c_str());
-                  repr->isPlayable = false;
-                  continue;
-                }
-
-                // Note to HDCP check:
-                // HDCP check should be done by the DRM where in case of problems should block key's
-                // for example with Widevine you will get "output-restricted" to key status
-                // the following it's an additional check for custom manifest's
-                if (kodiPropCfg.hdcpCheck == ADP::KODI_PROPS::HdcpCheckType::LICENSE)
-                {
-                  if (repr->GetHdcpVersion() > caps.hdcpVersion ||
-                      (caps.hdcpLimit > 0 && repr->GetWidth() * repr->GetHeight() > caps.hdcpLimit))
-                  {
-                    LOG::Log(
-                        LOGWARNING,
-                        "Disabled stream repr ID \"%s\", AdpSet ID \"%s\", as not HDCP compliant",
-                        repr->GetId().c_str(), adp->GetId().c_str());
-                    repr->isPlayable = false;
-                    continue;
-                  }
-
-                }
-              }
-            }
+            // TODO: GetKeysFromLicenseServer
           }
           else
           {
@@ -693,23 +620,8 @@ bool SESSION::CSession::PrepareStream(CStream& stream, uint64_t startPts)
 
   if (!repr->DrmInfos().empty())
   {
-    DRM::DRMMediaType drmMediaType{DRM::DRMMediaType::UNKNOWN};
-    const StreamType sType = adp->GetStreamType();
-
-    if (sType == StreamType::VIDEO || sType == StreamType::VIDEO_AUDIO)
-      drmMediaType = DRM::DRMMediaType::VIDEO;
-    else if (sType == StreamType::AUDIO)
-      drmMediaType = DRM::DRMMediaType::AUDIO;
-    else
-    {
-      LOG::LogF(LOGWARNING, "Stream media type \"%i\" is not supported by the DRM engine",
-                static_cast<int>(sType));
-      return false;
-    }
-
-    if (!m_drmEngine.InitializeSession(repr->DrmInfos(), drmMediaType,
-                                       period->IsSecureDecodeNeeded(), stream.m_info, repr, adp,
-                                       m_adaptiveTree->IsChangingPeriod(), initDrmInfo))
+    if (!m_drmEngine.InitializeSession(repr->DrmInfos(), stream.m_info, repr, adp,
+                                       initDrmInfo))
     {
       return false;
     }
@@ -733,19 +645,9 @@ bool SESSION::CSession::PrepareStream(CStream& stream, uint64_t startPts)
   if (!reader)
     return false;
 
-  const auto session = m_drmEngine.GetSession(stream.m_info.GetCryptoSession().GetSessionId(),
-                                              initDrmInfo.defaultKid);
-
-  if (adp->GetStreamType() == StreamType::VIDEO || adp->GetStreamType() == StreamType::VIDEO_AUDIO)
-  {
-    m_reprChooser->SetSecureSession(session && session->capabilities.flags &
-                                                   DRM::DecrypterCapabilites::SSD_SECURE_PATH);
-  }
-
-  if (session)
-    reader->SetDecrypter(session->decrypter, session->capabilities,
-                         DRM::ConvertKidStrToBytes(session->kid));
-
+  reader->SetDefaultKid(DRM::ConvertKidStrToBytes(initDrmInfo.defaultKid));
+  // TODO: GetKeysFromLicenseServer
+  // TODO: SetCdm
   stream.SetReader(std::move(reader));
 
   if (reprContainerType == ContainerType::TS || reprContainerType == ContainerType::ADTS)
