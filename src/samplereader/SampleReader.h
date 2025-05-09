@@ -22,11 +22,6 @@
 
 #include <future>
 
-class Adaptive_CencSingleSampleDecrypter;
-namespace DRM
-{
-struct DecrypterCapabilites;
-}
 namespace SESSION
 {
 class CStream;
@@ -58,8 +53,6 @@ public:
   virtual Type GetType() const = 0;
 
   virtual bool Initialize(SESSION::CStream* stream) { return true; }
-  virtual void SetDecrypter(std::shared_ptr<Adaptive_CencSingleSampleDecrypter> ssd,
-                            const DRM::DecrypterCapabilites& dcaps){};
   /*!
    * \brief Defines if the end of the stream is reached
    */
@@ -107,9 +100,10 @@ public:
   virtual AP4_Size GetSampleDataSize() const = 0;
   virtual const AP4_Byte* GetSampleData() const = 0;
   virtual uint64_t GetDuration() const = 0;
-  virtual bool IsEncrypted() const = 0;
+  virtual void AddStreamType(INPUTSTREAM_TYPE type, int streamId) {}
+  virtual void SetStreamType(INPUTSTREAM_TYPE type, int streamId) {}
+  virtual bool RemoveStreamType(INPUTSTREAM_TYPE type) { return true; };
   virtual bool IsStarted() const = 0;
-  virtual CryptoInfo GetReaderCryptoInfo() const { return CryptoInfo(); }
 
   /*!
    * \brief Read the sample asynchronously

@@ -18,7 +18,6 @@
 #include <mutex>
 
 // forwards
-class CAdaptiveCencSampleDecrypter;
 class CodecHandler;
 
 // \brief Redirects AP4_LinearReader callbacks
@@ -60,7 +59,7 @@ public:
 
   // \brief Execute AP4_LinearReader::GetSample
   AP4_Result GetSample(AP4_UI32 track_id, AP4_Sample& sample, AP4_Ordinal sample_index);
-  
+
   // \brief Execute AP4_LinearReader::Reset
   void Reset();
 
@@ -96,8 +95,6 @@ public:
   Type GetType() const override { return Type::FMP4; }
 
   virtual bool Initialize(SESSION::CStream* stream) override;
-  virtual void SetDecrypter(std::shared_ptr<Adaptive_CencSingleSampleDecrypter> ssd,
-                            const DRM::DecrypterCapabilites& dcaps) override;
 
   AP4_Result Start(bool& bStarted) override;
   AP4_Result ReadSample() override;
@@ -109,14 +106,12 @@ public:
   AP4_Size GetSampleDataSize() const override { return m_sampleData.GetDataSize(); }
   const AP4_Byte* GetSampleData() const override { return m_sampleData.GetData(); }
   uint64_t GetDuration() const override;
-  bool IsEncrypted() const override;
   bool GetInformation(kodi::addon::InputstreamInfo& info) override;
   bool TimeSeek(uint64_t pts, bool preceeding) override;
   void SetPTSOffset(uint64_t offset) override;
   int64_t GetPTSDiff() const override { return m_ptsDiff; }
   bool GetFragmentInfo(uint64_t& duration) override;
   uint32_t GetTimeScale() const override { return m_track->GetMediaTimeScale(); }
-  CryptoInfo GetReaderCryptoInfo() const override { return m_readerCryptoInfo; }
 
   /*!
    * \brief Create a new reader by sharing the same data reader and segment management (AdaptiveStream).
@@ -138,8 +133,6 @@ private:
   AP4_Track* m_track;
   AP4_UI32 m_poolId{0};
   AP4_UI32 m_sampleDescIndex{1};
-  DRM::DecrypterCapabilites m_decrypterCaps;
-  unsigned int m_failCount{0};
   bool m_bSampleDescChanged{false};
   bool m_eos{false};
   bool m_started{false};
@@ -154,9 +147,7 @@ private:
   CodecHandler* m_codecHandler{nullptr};
   std::vector<uint8_t> m_defaultKey;
   AP4_ProtectedSampleDescription* m_protectedDesc{nullptr};
-  std::shared_ptr<Adaptive_CencSingleSampleDecrypter> m_singleSampleDecryptor{nullptr};
-  std::unique_ptr<CAdaptiveCencSampleDecrypter> m_decrypter;
-  CryptoInfo m_readerCryptoInfo{};
+  std::shared_ptr<AP4_CencSampleDecrypter> m_decrypter;
 
   std::shared_ptr<CLinearReader> m_lReader;
 };

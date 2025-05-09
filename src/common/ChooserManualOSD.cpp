@@ -37,15 +37,12 @@ void CRepresentationChooserManualOSD::Initialize(const ADP::KODI_PROPS::ChooserP
     m_streamSelectionMode = StreamSelection::MANUAL;
 
   m_screenResMax = settings.GetResMax();
-  m_screenResSecureMax = settings.GetResSecureMax();
 
   LOG::Log(LOGDEBUG,
            "[Repr. chooser] Configuration\n"
            "Stream manual selection mode: %i\n"
-           "Resolution max: %ix%i\n"
-           "Resolution max for secure decoder: %ix%i",
-           manualSelMode, m_screenResMax.first, m_screenResMax.second,
-           m_screenResSecureMax.first, m_screenResSecureMax.second);
+           "Resolution max: %ix%i\n",
+           manualSelMode, m_screenResMax.first, m_screenResMax.second);
 }
 
 void CRepresentationChooserManualOSD::RefreshResolution()
@@ -54,7 +51,7 @@ void CRepresentationChooserManualOSD::RefreshResolution()
   m_screenHeight = m_screenCurrentHeight;
 
   // If set, limit resolution to user choice
-  const auto& userResLimit{m_isSecureSession ? m_screenResSecureMax : m_screenResMax};
+  const auto& userResLimit{m_screenResMax};
 
   if (userResLimit.first > 0 && userResLimit.second > 0)
   {
@@ -64,12 +61,6 @@ void CRepresentationChooserManualOSD::RefreshResolution()
     if (m_screenHeight > userResLimit.second)
       m_screenHeight = userResLimit.second;
   }
-}
-
-void CRepresentationChooserManualOSD::SetSecureSession(const bool isSecureSession)
-{
-  m_isSecureSession = isSecureSession;
-  RefreshResolution();
 }
 
 void CRepresentationChooserManualOSD::PostInit()
