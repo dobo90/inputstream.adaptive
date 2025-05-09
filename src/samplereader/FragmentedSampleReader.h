@@ -9,7 +9,7 @@
 #pragma once
 
 #include "SampleReader.h"
-#include "decrypters/IDecrypter.h"
+#include "decrypters/Cdm.h"
 
 // forwards
 class CodecHandler;
@@ -44,6 +44,7 @@ public:
   bool GetFragmentInfo(uint64_t& duration) override;
   uint32_t GetTimeScale() const override { return m_track->GetMediaTimeScale(); }
   void UpdateSampleDescription() override;
+  void SetCdm(DRM::Cdm* cdm) override { m_cdm = cdm; }
 
 protected:
   AP4_Result ProcessMoof(AP4_ContainerAtom* moof,
@@ -73,4 +74,5 @@ private:
   std::vector<uint8_t> m_defaultKey;
   AP4_ProtectedSampleDescription* m_protectedDesc{nullptr};
   std::unique_ptr<AP4_CencSampleDecrypter> m_decrypter;
+  DRM::Cdm* m_cdm{nullptr};
 };
