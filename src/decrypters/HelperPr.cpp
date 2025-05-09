@@ -209,20 +209,6 @@ bool DRM::PRHeaderParser::Parse(const std::vector<uint8_t>& prHeader)
     // Version 4.0 have KID within DATA tag
     xml_node nodeKID = nodeDATA.child("KID");
     kidBase64 = nodeKID.child_value();
-
-    xml_node nodePROTECTINFO = nodeDATA.child("PROTECTINFO");
-    if (nodePROTECTINFO)
-    {
-      xml_node nodeAlgid = nodePROTECTINFO.child("ALGID");
-      if (nodeAlgid)
-      {
-        std::string_view algid = nodeAlgid.child_value();
-        if (algid == "AESCTR")
-          m_encryption = EncryptionType::AESCTR;
-        else if (algid == "AESCBC")
-          m_encryption = EncryptionType::AESCBC;
-      }
-    }
   }
   else
   {
@@ -235,12 +221,6 @@ bool DRM::PRHeaderParser::Parse(const std::vector<uint8_t>& prHeader)
       if (nodeKID)
       {
         kidBase64 = nodeKID.attribute("VALUE").as_string();
-
-        std::string_view algid = nodeKID.attribute("ALGID").as_string();
-        if (algid == "AESCTR")
-          m_encryption = EncryptionType::AESCTR;
-        else if (algid == "AESCBC")
-          m_encryption = EncryptionType::AESCBC;
       }
       else
       {
@@ -254,12 +234,6 @@ bool DRM::PRHeaderParser::Parse(const std::vector<uint8_t>& prHeader)
           if (nodeKID)
           {
             kidBase64 = nodeKID.attribute("VALUE").as_string();
-
-            std::string_view algid = nodeKID.attribute("ALGID").as_string();
-            if (algid == "AESCTR")
-              m_encryption = EncryptionType::AESCTR;
-            else if (algid == "AESCBC")
-              m_encryption = EncryptionType::AESCBC;
           }
         }
       }
