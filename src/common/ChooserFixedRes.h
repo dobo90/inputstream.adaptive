@@ -32,7 +32,6 @@ public:
 
 private:
   std::pair<int, int> m_screenResMax; // Max resolution for non-protected video content
-  std::pair<int, int> m_screenResSecureMax; // Max resolution for protected video content
 };
 
 } // namespace CHOOSER

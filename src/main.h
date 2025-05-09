@@ -64,28 +64,3 @@ private:
 
   bool m_checkCoreReopen{false}; // Check if Kodi core will reopen all streams
 };
-
-/*******************************************************/
-/*                     VideoCodec                      */
-/*******************************************************/
-
-class ATTR_DLL_LOCAL CVideoCodecAdaptive : public kodi::addon::CInstanceVideoCodec
-{
-public:
-  CVideoCodecAdaptive(const kodi::addon::IInstanceInfo& instance);
-  CVideoCodecAdaptive(const kodi::addon::IInstanceInfo& instance, CInputStreamAdaptive* parent);
-  virtual ~CVideoCodecAdaptive();
-
-  bool Open(const kodi::addon::VideoCodecInitdata& initData) override;
-  bool Reconfigure(const kodi::addon::VideoCodecInitdata& initData) override;
-  bool AddData(const DEMUX_PACKET& packet) override;
-  VIDEOCODEC_RETVAL GetPicture(VIDEOCODEC_PICTURE& picture) override;
-  const char* GetName() override { return m_name.c_str(); };
-  void Reset() override;
-
-private:
-  std::shared_ptr<SESSION::CSession> m_session;
-  std::shared_ptr<DRM::IDecrypterDecoder> m_drmDecoder;
-  bool m_waitExtraData{false};
-  std::string m_name;
-};
