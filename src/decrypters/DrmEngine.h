@@ -33,42 +33,15 @@ public:
   virtual ~CDRMEngine() = default;
 
   /*!
-   * \brief Pre-initialize a DRM before to download a manifest and create a session.
-   * \param session[OUT] The opened session
-   * \return True if has been pre-initialized, otherwise false
-   */
-  bool PreInitializeDRM(DRMSession& session);
-
-  /*!
    * \brief Initialize a DRM (if needed), then create or reuse a session.
    * \param drmInfos The DRM info provided by a manifest
-   * \param mediaType The type of media involved in the session
-   * \param isForceSecureDecoder[OPT] To force the Secure Decoder, this setting coming from the manifest
    * \param streamInfo The InputstreamInfo where set the DRM configuration
-   * \param canCleanupSessions Delete existing sessions before to create a new one
    * \return The DRM session if has success, otherwise nullptr
    */
-  const std::shared_ptr<DRMSession> InitializeSession(std::vector<DRM::DRMInfo> manifestDrmInfos,
-                                                      std::vector<DRM::DRMInfo> mediaDrmInfos,
-                                                      DRM::DRMMediaType mediaType,
-                                                      std::optional<bool> isForceSecureDecoder,
-                                                      kodi::addon::InputstreamInfo& streamInfo,
-                                                      bool canCleanupSessions);
-
-  /*!
-   * \brief Get the session by ID (dont take in account KID).
-   * \param id The session ID
-   * \return The session, otherwise nullptr if not found
-   */
-  const std::shared_ptr<DRMSession> GetSession(const std::string& id) const;
-
-  /*!
-   * \brief Get the session by ID that match the specified KID.
-   * \param id The session ID
-   * \return The session, otherwise nullptr if not found
-   */
-  const std::shared_ptr<DRMSession> GetSession(const std::string& id, const std::string& kid) const;
-
+  std::optional<std::pair<DRMInfo, std::shared_ptr<DRM::IDecrypter>>> InitializeSession(
+      std::vector<DRM::DRMInfo> manifestDrmInfos,
+      std::vector<DRM::DRMInfo> mediaDrmInfos,
+      kodi::addon::InputstreamInfo& streamInfo);
 
   /*!
    * \brief Get the current engine status. The state can change after each call to InitializeSession.
@@ -99,9 +72,6 @@ private:
    */
   bool SelectDRM(std::vector<DRM::DRMInfo>& drmInfos);
 
-  // \brief Delete all sessions by media type
-  void DeleteSessionsByType(const DRMMediaType type);
-
   // \brief Check if a Key System is supported
   bool HasKeySystemSupport(std::string_view keySystem) const;
 
@@ -110,10 +80,8 @@ private:
 
   std::string m_keySystem; // Choosen key system
   std::vector<DRMInstance> m_drms;
-  std::vector<std::shared_ptr<DRMSession>> m_sessions;
 
   EngineStatus m_status{EngineStatus::NONE};
-  bool m_isPreinitialized{false};
 };
 
 } // namespace DRM
