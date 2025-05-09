@@ -45,16 +45,6 @@ std::pair<int, int> ADP::SETTINGS::CCompSettings::GetResMax() const
   return val;
 }
 
-std::pair<int, int> ADP::SETTINGS::CCompSettings::GetResSecureMax() const
-{
-  std::pair<int, int> val;
-  if (!STRING::GetMapValue(RES_CONV_LIST,
-                           kodi::addon::GetSettingString("adaptivestream.res.secure.max"), val))
-    LOG::Log(LOGERROR, "Unknown value for \"adaptivestream.res.secure.max\" setting");
-
-  return val;
-}
-
 std::pair<int, int> ADP::SETTINGS::CCompSettings::GetResRangeLimit() const
 {
   std::pair<int, int> val;
@@ -108,11 +98,6 @@ int ADP::SETTINGS::CCompSettings::GetChooserTestSegs() const
 int ADP::SETTINGS::CCompSettings::GetMediaType() const
 {
   return kodi::addon::GetSettingInt("MEDIATYPE");
-}
-
-bool ADP::SETTINGS::CCompSettings::IsDisableSecureDecoder() const
-{
-  return kodi::addon::GetSettingBoolean("NOSECUREDECODER");
 }
 
 std::string ADP::SETTINGS::CCompSettings::GetDecrypterPath() const
