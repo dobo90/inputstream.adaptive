@@ -18,6 +18,7 @@
 #include "codechandler/VP9CodecHandler.h"
 #include "codechandler/WebVTTCodecHandler.h"
 #include "utils/CharArrayParser.h"
+#include "utils/StringUtils.h"
 #include "utils/Utils.h"
 #include "utils/log.h"
 
@@ -376,9 +377,25 @@ AP4_Result CFragmentedSampleReader::ProcessMoof(AP4_ContainerAtom* moof,
         traf->AddChild(new AP4_SencAtom());
       }
 
-      // TODO: GetKey
-      AP4_CencSampleDecrypter::Create(m_protectedDesc, traf, *m_FragmentStream, moof_offset,
-                                      nullptr, 0, nullptr, nullptr, m_decrypter);
+      if (m_cdm)
+      {
+        std::vector<uint8_t> key = m_cdm->GetKey(m_defaultKey).value_or(std::vector<uint8_t>());
+
+        if (!key.empty())
+        {
+          AP4_CencSampleDecrypter::Create(m_protectedDesc, traf, *m_FragmentStream, moof_offset,
+                                          key.data(), key.size(), nullptr, nullptr, m_decrypter);
+        }
+        else
+        {
+          const std::string kidStr = STRING::ToHexadecimal(m_defaultKey);
+          LOG::LogF(LOGERROR, "No key in cdm for kid %s", kidStr.c_str());
+        }
+      }
+      else
+      {
+        LOG::LogF(LOGERROR, "No cdm while trying to get key");
+      }
     }
   }
   return AP4_SUCCESS;
