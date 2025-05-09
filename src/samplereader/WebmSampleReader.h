@@ -37,7 +37,6 @@ public:
   AP4_Size GetSampleDataSize() const override { return GetPacketSize(); }
   const AP4_Byte* GetSampleData() const override { return GetPacketData(); }
   uint64_t GetDuration() const override { return WebmReader::GetDuration() * 1000; }
-  bool IsEncrypted() const override { return false; }
 
 private:
   AP4_UI32 m_streamId;

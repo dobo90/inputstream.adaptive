@@ -90,8 +90,6 @@ protected:
                          std::string& kid,
                          std::string& licenseUrl);
 
-  bool ParseTagContentProtectionSecDec(pugi::xml_node nodeParent);
-
   uint32_t ParseAudioChannelConfig(pugi::xml_node node);
 
   void MergeAdpSets();

@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include "utils/CryptoUtils.h"
-
 #include <bento4/Ap4.h>
 
 #ifdef INPUTSTREAM_TEST_BUILD
@@ -21,11 +19,6 @@
 
 #include <future>
 
-class Adaptive_CencSingleSampleDecrypter;
-namespace DRM
-{
-struct DecrypterCapabilites;
-}
 namespace SESSION
 {
 class CStream;
@@ -45,8 +38,6 @@ class ATTR_DLL_LOCAL ISampleReader
 public:
   virtual ~ISampleReader() = default;
   virtual bool Initialize(SESSION::CStream* stream) { return true; }
-  virtual void SetDecrypter(Adaptive_CencSingleSampleDecrypter* ssd,
-                            const DRM::DecrypterCapabilites& dcaps){};
   /*!
    * \brief Defines if the end of the stream is reached
    */
@@ -81,12 +72,11 @@ public:
   virtual AP4_Size GetSampleDataSize() const = 0;
   virtual const AP4_Byte* GetSampleData() const = 0;
   virtual uint64_t GetDuration() const = 0;
-  virtual bool IsEncrypted() const = 0;
   virtual void AddStreamType(INPUTSTREAM_TYPE type, uint32_t sid) {};
   virtual void SetStreamType(INPUTSTREAM_TYPE type, uint32_t sid) {};
   virtual bool RemoveStreamType(INPUTSTREAM_TYPE type) { return true; };
   virtual bool IsStarted() const = 0;
-  virtual CryptoInfo GetReaderCryptoInfo() const { return CryptoInfo(); }
+  virtual void UpdateSampleDescription() {}
 
   /*!
    * \brief Read the sample asynchronously
