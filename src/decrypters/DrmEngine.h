@@ -8,8 +8,8 @@
 
 #pragma once
 
+#include "Cdm.h"
 #include "DrmEngineDefines.h"
-#include "IDecrypter.h"
 #include "utils/CryptoUtils.h"
 
 #ifdef INPUTSTREAM_TEST_BUILD
@@ -76,6 +76,8 @@ public:
    */
   void Dispose();
 
+  std::shared_ptr<DRM::Cdm> GetCdm() const;
+
 private:
   /*!
    * \brief Configure DRM ClearKey, by replacing manifest DRM info when needed.
@@ -98,7 +100,7 @@ private:
 
   std::vector<std::string> m_supportedKs; // Supported key systems, the lower index has higher priority
   std::string m_keySystem; // Choosen key system
-  std::map<std::string, std::shared_ptr<DRM::IDecrypter>> m_drms; // KeySystem - DRM instance
+  std::map<std::string, std::shared_ptr<DRM::Cdm>> m_drms; // KeySystem - DRM instance
 
   EngineStatus m_status{EngineStatus::NONE};
 };
