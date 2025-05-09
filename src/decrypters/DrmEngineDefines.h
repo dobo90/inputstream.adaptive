@@ -18,7 +18,6 @@
 #include <vector>
 
 // forwards
-class Adaptive_CencSingleSampleDecrypter;
 namespace DRM
 {
 class IDecrypter;
@@ -27,37 +26,10 @@ class IDecrypter;
 namespace DRM
 {
 
-constexpr uint16_t HDCP_V_NONE = 0;
-constexpr uint16_t HDCP_V_MAX = 9999;
-
-struct DecrypterCapabilites
-{
-  static const uint32_t SSD_SUPPORTS_DECODING = 1;
-  static const uint32_t SSD_SECURE_PATH = 2;
-  static const uint32_t SSD_ANNEXB_REQUIRED = 4;
-  static const uint32_t SSD_HDCP_RESTRICTED = 8;
-  static const uint32_t SSD_SINGLE_DECRYPT = 16;
-  static const uint32_t SSD_SECURE_DECODER = 32;
-  static const uint32_t SSD_INVALID = 64;
-
-  uint16_t flags{0};
-
-  /* The following 2 fields are set as followed:
-     - If licenseresponse return hdcp information, hdcpversion is 0 and
-       hdcplimit either 0 (if hdcp is supported) or given value (if hdcpversion is not supported)
-     - if no hdcp information is passed in licenseresponse, we set hdcpversion to the value we support
-       manifest / representation have to check if they are allowed to be played.
-  */
-  uint16_t hdcpVersion{HDCP_V_NONE}; //The HDCP version streams has to be restricted 0,10,20,21,22.....
-  int hdcpLimit{0}; // If set (> 0) streams that are greater than the multiplication of "Width x Height" cannot be played.
-};
-
 struct Config
 {
   // The Key System used to initialize DRM
   std::string keySystem;
-  // To enable persistent state CDM behaviour
-  bool isPersistentStorage{false};
   // Optional parameters to make the CDM key request (CDM specific parameters)
   std::map<std::string, std::string> optKeyReqParams;
 
@@ -115,23 +87,11 @@ enum class DRMMediaType
 struct DRMInfo
 {
   std::string keySystem; // Key system, empty if CENC
-  CryptoMode cryptoMode = CryptoMode::NONE; // Encryption scheme
   std::string robustness;
   std::vector<uint8_t> initData;
   std::string defaultKid;
   std::string licenseServerUri;
   std::vector<uint8_t> serverCert; // Server certificate
-};
-
-struct DRMSession
-{
-  std::string id; // DRM session ID
-  std::shared_ptr<DRM::IDecrypter> drm; // DRM instance
-  std::shared_ptr<Adaptive_CencSingleSampleDecrypter> decrypter; // DRM Decrypter instance
-  DRM::DecrypterCapabilites capabilities;
-  std::string kid;
-  std::string challenge; // Key request (Challenge) as base64
-  DRMMediaType mediaType{DRMMediaType::UNKNOWN};
 };
 
 } // namespace DRM
