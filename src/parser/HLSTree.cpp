@@ -1211,11 +1211,6 @@ void adaptive::CHLSTree::ProcessEncryption(
       else
         LOG::LogF(LOGERROR, "Incorrect KEYID tag format");
     }
-
-    if (encryptMethod == "SAMPLE-AES-CTR")
-      drmInfo.cryptoMode = CryptoMode::AES_CTR;
-    else if (encryptMethod == "SAMPLE-AES")
-      drmInfo.cryptoMode = CryptoMode::AES_CBC;
   }
   // PLAYREADY
   else if (STRING::CompareNoCase(keyFormat, DRM::KS_PLAYREADY))
@@ -1236,12 +1231,6 @@ void adaptive::CHLSTree::ProcessEncryption(
     {
       drmInfo.licenseServerUri = parser.GetLicenseURL();
       drmInfo.defaultKid = STRING::ToLower(STRING::ToHexadecimal(parser.GetKID()));
-
-      auto encryptionType = parser.GetEncryption();
-      if (encryptionType == DRM::PRHeaderParser::EncryptionType::AESCTR)
-        drmInfo.cryptoMode = CryptoMode::AES_CTR;
-      else if (encryptionType == DRM::PRHeaderParser::EncryptionType::AESCBC)
-        drmInfo.cryptoMode = CryptoMode::AES_CBC;
     }
     else
       LOG::LogF(LOGERROR, "Cannot parse Playready header");
@@ -1265,11 +1254,6 @@ void adaptive::CHLSTree::ProcessEncryption(
       if (DownloadKey(uriUrl, {}, {}, resp))
         drmInfo.initData = STRING::ToVecUint8(resp.data);
     }
-
-    if (encryptMethod == "SAMPLE-AES-CTR")
-      drmInfo.cryptoMode = CryptoMode::AES_CTR;
-    else if (encryptMethod == "SAMPLE-AES")
-      drmInfo.cryptoMode = CryptoMode::AES_CBC;
   }
   // FAIRPLAY (unsupported, added to test MP4 stream with Clearkey)
   else if (STRING::CompareNoCase(keyFormat, "com.apple.streamingkeydelivery"))
@@ -1278,11 +1262,6 @@ void adaptive::CHLSTree::ProcessEncryption(
     drmInfo.keySystem = DRM::KS_FAIRPLAY;
 
     // There is no DRM/Key management implementation
-
-    if (encryptMethod == "SAMPLE-AES-CTR")
-      drmInfo.cryptoMode = CryptoMode::AES_CTR;
-    else if (encryptMethod == "SAMPLE-AES")
-      drmInfo.cryptoMode = CryptoMode::AES_CBC;
   }
   else // Unsupported encryption
   {

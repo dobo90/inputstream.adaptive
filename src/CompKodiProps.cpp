@@ -222,15 +222,6 @@ void ADP::KODI_PROPS::CCompKodiProps::InitStage1(const std::map<std::string, std
       else
         LOG::Log(LOGERROR, "Resolution not valid on \"%s\" property.", prop.first.c_str());
     }
-    else if (prop.first == PROP_CHOOSER_RES_SECURE_MAX)
-    {
-      LogProp(prop.first, prop.second);
-      std::pair<int, int> res;
-      if (STRING::GetMapValue(ADP::SETTINGS::RES_CONV_LIST, prop.second, res))
-        m_chooserProps.m_resolutionSecureMax = res;
-      else
-        LOG::Log(LOGERROR, "Resolution not valid on \"%s\" property.", prop.first.c_str());
-    }
     else if (prop.first == PROP_CONFIG)
     {
       LogProp(prop.first, prop.second);
@@ -324,18 +315,6 @@ void ADP::KODI_PROPS::CCompKodiProps::ParseConfig(const std::string& data)
     else if (configName == "internal_cookies" && jValue.is_boolean())
     {
       m_config.internalCookies = jValue.get<bool>();
-    }
-    else if (configName == "check_hdcp" && jValue.is_string())
-    {
-      std::string_view value = jValue.get<std::string_view>();
-
-      if (value.empty() || value == "default")
-        m_config.hdcpCheck = HdcpCheckType::DEFAULT;
-      else if (value == "license")
-        m_config.hdcpCheck = HdcpCheckType::LICENSE;
-      else
-        LOG::LogF(LOGERROR, "Value \"%s\" isnt supported on \"%s\" config of \"%s\" property",
-                  value.data(), configName.c_str(), PROP_MANIFEST_CONFIG.data());
     }
     else if (configName == "resolution_limit" && jValue.is_string())
     {

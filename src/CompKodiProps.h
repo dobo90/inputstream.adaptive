@@ -32,13 +32,6 @@ struct ChooserProps
   std::string m_chooserType; // Specifies chooser type to be used
   uint32_t m_bandwidthMax{0};
   std::pair<int, int> m_resolutionMax; // Res. limit for non-protected videos (values 0 means auto)
-  std::pair<int, int> m_resolutionSecureMax; // Res. limit for DRM protected videos (values 0 means auto)
-};
-
-enum class HdcpCheckType
-{
-  DEFAULT,
-  LICENSE, // To check HDCP values from DRM license response
 };
 
 // Generic add-on configuration
@@ -49,8 +42,6 @@ struct Config
   bool curlSSLVerifyPeer{true};
   // Determines if cookies are internally handled by InputStream Adaptive add-on
   bool internalCookies{false};
-  // Determines how HDCP should be checked
-  HdcpCheckType hdcpCheck{HdcpCheckType::DEFAULT};
   // Force limit resolutions of manifest streams to the specified value included (value in px, height x width)
   int resolutionLimit{0};
 };

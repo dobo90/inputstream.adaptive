@@ -77,13 +77,6 @@ public:
    */
   void SetTimescale(uint32_t timescale) { m_timescale = timescale; }
 
-  // Force the use of secure decoder only when parsed manifest specify it
-  std::optional<bool> IsSecureDecodeNeeded() const { return m_isSecureDecoderNeeded; }
-  void SetSecureDecodeNeeded(std::optional<bool> isSecureDecoderNeeded)
-  {
-    m_isSecureDecoderNeeded = isSecureDecoderNeeded;
-  };
-
   std::vector<uint32_t>& SegmentTimelineDuration() { return m_segmentTimelineDuration; }
   bool HasSegmentTimelineDuration() { return !m_segmentTimelineDuration.empty(); }
 
@@ -105,7 +98,6 @@ protected:
   uint64_t m_start{NO_VALUE};
   uint64_t m_duration{0};
 
-  std::optional<bool> m_isSecureDecoderNeeded;
   std::vector<uint32_t> m_segmentTimelineDuration;
 };
 
