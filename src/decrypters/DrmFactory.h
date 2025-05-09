@@ -8,12 +8,12 @@
 
 #pragma once
 
-#include "IDecrypter.h"
+#include "Cdm.h"
 
 namespace DRM
 {
 namespace FACTORY
 {
-IDecrypter* GetDecrypter(STREAM_CRYPTO_KEY_SYSTEM keySystem);
+Cdm* GetCdm(STREAM_CRYPTO_KEY_SYSTEM keySystem);
 }
 } // namespace DRM
