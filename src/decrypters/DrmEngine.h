@@ -8,8 +8,8 @@
 
 #pragma once
 
+#include "Cdm.h"
 #include "DrmEngineDefines.h"
-#include "IDecrypter.h"
 #include "utils/CryptoUtils.h"
 
 #ifdef INPUTSTREAM_TEST_BUILD
@@ -38,7 +38,7 @@ public:
    * \param streamInfo The InputstreamInfo where set the DRM configuration
    * \return The DRM session if has success, otherwise nullptr
    */
-  std::optional<std::pair<DRMInfo, std::shared_ptr<DRM::IDecrypter>>> InitializeSession(
+  std::optional<std::pair<DRMInfo, std::shared_ptr<DRM::Cdm>>> InitializeSession(
       std::vector<DRM::DRMInfo> manifestDrmInfos,
       std::vector<DRM::DRMInfo> mediaDrmInfos,
       kodi::addon::InputstreamInfo& streamInfo);
@@ -76,7 +76,7 @@ private:
   bool HasKeySystemSupport(std::string_view keySystem) const;
 
   // \brief Get a DRM instance for the specified key system, it will return nullptr if not found
-  std::shared_ptr<DRM::IDecrypter> GetDrmInstance(std::string_view ks) const;
+  std::shared_ptr<DRM::Cdm> GetDrmInstance(std::string_view ks) const;
 
   std::string m_keySystem; // Choosen key system
   std::vector<DRMInstance> m_drms;
