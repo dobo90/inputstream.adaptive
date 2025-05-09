@@ -20,7 +20,7 @@
 // forwards
 namespace DRM
 {
-class IDecrypter;
+class Cdm;
 }
 
 namespace DRM
@@ -88,9 +88,9 @@ struct DRMInfo
 struct DRMInstance
 {
   std::string keySystem;
-  std::shared_ptr<DRM::IDecrypter> drm;
+  std::shared_ptr<DRM::Cdm> drm;
 
-  DRMInstance(std::string_view ks, std::shared_ptr<DRM::IDecrypter> d)
+  DRMInstance(std::string_view ks, std::shared_ptr<DRM::Cdm> d)
     : keySystem(ks), drm(d)
   {
   }

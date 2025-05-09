@@ -179,7 +179,19 @@ bool SESSION::CSession::CheckPlayableStreams(PLAYLIST::CPeriod* period)
           if (m_drmEngine.InitializeSession(repr->DrmInfos(), isInfo, repr.get(),
                                             adp.get(), initDrmInfo))
           {
-            // TODO: GetKeysFromLicenseServer
+            auto cdm = m_drmEngine.GetDrmInstance(initDrmInfo.keySystem);
+            const auto defaultKid = DRM::ConvertKidStrToBytes(initDrmInfo.defaultKid);
+            const bool gotKeys =
+                cdm != nullptr && cdm->GetKeysFromLicenseServer(initDrmInfo.initData, defaultKid);
+
+            if (!gotKeys && !defaultKid.empty() &&
+                !CSrvBroker::GetKodiProps().GetManifestConfig().ignoreFMP4defaultKid)
+            {
+              LOG::LogF(LOGWARNING,
+                        "Disabled stream repr ID \"%s\", AdpSet ID \"%s\", KID: \"%s\", failed to get keys from CDM",
+                        repr->GetId().c_str(), adp->GetId().c_str(), initDrmInfo.defaultKid.c_str());
+              repr->isPlayable = false;
+            }
           }
           else
           {
@@ -645,9 +657,29 @@ bool SESSION::CSession::PrepareStream(CStream& stream, uint64_t startPts)
   if (!reader)
     return false;
 
-  reader->SetDefaultKid(DRM::ConvertKidStrToBytes(initDrmInfo.defaultKid));
-  // TODO: GetKeysFromLicenseServer
-  // TODO: SetCdm
+  auto cdm = m_drmEngine.GetDrmInstance(initDrmInfo.keySystem);
+  reader->SetCdm(cdm);
+
+  if (!repr->DrmInfos().empty())
+  {
+    const auto defaultKid =
+        reader->SetDefaultKid(DRM::ConvertKidStrToBytes(initDrmInfo.defaultKid));
+    const bool gotKeys =
+        cdm != nullptr && cdm->GetKeysFromLicenseServer(initDrmInfo.initData, defaultKid);
+
+    if (!gotKeys && !defaultKid.empty())
+    {
+      LOG::LogF(LOGWARNING,
+                "Disabled stream repr ID \"%s\", AdpSet ID \"%s\", KID: \"%s\", failed to get keys from CDM",
+                repr->GetId().c_str(), adp->GetId().c_str(), initDrmInfo.defaultKid.c_str());
+      repr->isPlayable = false;
+    }
+  }
+  else
+  {
+    reader->SetDefaultKid({});
+  }
+
   stream.SetReader(std::move(reader));
 
   if (reprContainerType == ContainerType::TS || reprContainerType == ContainerType::ADTS)

@@ -8,8 +8,8 @@
 
 #pragma once
 
+#include "Cdm.h"
 #include "DrmEngineDefines.h"
-#include "IDecrypter.h"
 #include "utils/CryptoUtils.h"
 
 #ifdef INPUTSTREAM_TEST_BUILD
@@ -65,6 +65,9 @@ public:
    */
   void Dispose();
 
+  // \brief Get a DRM instance for the specified key system, it will return nullptr if not found
+  std::shared_ptr<DRM::Cdm> GetDrmInstance(std::string_view ks) const;
+
 private:
   /*!
    * \brief Initialize the DRM engine.
@@ -89,9 +92,6 @@ private:
 
   // \brief Check if a Key System is supported
   bool HasKeySystemSupport(std::string_view keySystem) const;
-
-  // \brief Get a DRM instance for the specified key system, it will return nullptr if not found
-  std::shared_ptr<DRM::IDecrypter> GetDrmInstance(std::string_view ks) const;
 
   std::string m_keySystem; // Choosen key system
   std::vector<DRMInstance> m_drms;
