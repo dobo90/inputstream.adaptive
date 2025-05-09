@@ -46,7 +46,6 @@ public:
   AP4_Size GetSampleDataSize() const override { return m_sampleData.GetDataSize(); }
   const AP4_Byte* GetSampleData() const override { return m_sampleData.GetData(); }
   uint64_t GetDuration() const override { return m_sample.GetDuration() * 1000; }
-  bool IsEncrypted() const override { return false; }
 
 private:
   bool InitializeFile(std::string url);
