@@ -17,7 +17,6 @@
 #include "codechandler/TTMLCodecHandler.h"
 #include "codechandler/VP9CodecHandler.h"
 #include "codechandler/WebVTTCodecHandler.h"
-#include "common/AdaptiveCencSampleDecrypter.h"
 #include "utils/CharArrayParser.h"
 #include "utils/Utils.h"
 #include "utils/log.h"
@@ -45,9 +44,6 @@ CFragmentedSampleReader::CFragmentedSampleReader(AP4_ByteStream* input,
 
 CFragmentedSampleReader::~CFragmentedSampleReader()
 {
-  if (m_singleSampleDecryptor)
-    m_singleSampleDecryptor->RemovePool(m_poolId);
-
   delete m_codecHandler;
 }
 
@@ -99,21 +95,6 @@ bool CFragmentedSampleReader::Initialize(SESSION::CStream* stream)
   return true;
 }
 
-void CFragmentedSampleReader::SetDecrypter(Adaptive_CencSingleSampleDecrypter* ssd,
-                                           const DRM::DecrypterCapabilites& dcaps)
-{
-  if (ssd)
-  {
-    m_poolId = ssd->AddPool();
-    m_singleSampleDecryptor = ssd;
-  }
-  
-  m_decrypterCaps = dcaps;
-
-  // We need this to fill extradata
-  UpdateSampleDescription();
-}
-
 AP4_Result CFragmentedSampleReader::Start(bool& bStarted)
 {
   bStarted = false;
@@ -162,46 +143,13 @@ AP4_Result CFragmentedSampleReader::ReadSample()
     //AP4_AvcSequenceParameterSet sps;
     //AP4_AvcFrameParser::ParseFrameForSPS(m_sampleData.GetData(), m_sampleData.GetDataSize(), 4, sps);
 
-    //Protection could have changed in ProcessMoof
-    bool useDecryptingDecoder =
-        m_singleSampleDecryptor &&
-        (m_decrypterCaps.flags & DRM::DecrypterCapabilites::SSD_SECURE_PATH) != 0;
-
     if (m_decrypter)
     {
       m_sampleData.Reserve(sampleData.GetDataSize());
-      if (AP4_FAILED(result =
-                         m_decrypter->DecryptSampleData(m_poolId, sampleData, m_sampleData, NULL)))
+      if (AP4_FAILED(result = m_decrypter->DecryptSampleData(sampleData, m_sampleData, nullptr)))
       {
         LOG::Log(LOGERROR, "Decrypt Sample returns failure!");
-        if (++m_failCount > 50)
-        {
-          Reset(true);
-          return result;
-        }
-        else
-        {
-          m_sampleData.SetDataSize(0);
-        }
-      }
-      else
-      {
-        m_failCount = 0;
-      }
-    }
-    else if (useDecryptingDecoder)
-    {
-      // Should fall here for the specific case of unencrypted content,
-      // to help convert packets to annex-b
-      // it depends on decrypter implementation
-      //! @todo: it appears to have been implemented in the past for Widevine
-      //!        and may not be suitable for other decryptors
-      m_sampleData.Reserve(sampleData.GetDataSize());
-      if (AP4_FAILED(result = m_singleSampleDecryptor->DecryptSampleData(
-                         m_poolId, sampleData, m_sampleData, nullptr, 0, nullptr, nullptr)))
-      {
-        Reset(true);
-        return result;
+        m_sampleData.SetDataSize(0);
       }
     }
     else
@@ -235,11 +183,6 @@ void CFragmentedSampleReader::Reset(bool bEOS)
 uint64_t CFragmentedSampleReader::GetDuration() const
 {
   return (m_sample.GetDuration() * m_timeBaseExt) / m_timeBaseInt;
-}
-
-bool CFragmentedSampleReader::IsEncrypted() const
-{
-  return (m_decrypterCaps.flags & DRM::DecrypterCapabilites::SSD_SECURE_PATH) != 0 && m_decrypter;
 }
 
 bool CFragmentedSampleReader::GetInformation(kodi::addon::InputstreamInfo& info)
@@ -381,8 +324,6 @@ AP4_Result CFragmentedSampleReader::ProcessMoof(AP4_ContainerAtom* moof,
     if (m_protectedDesc)
     {
       //Setup the decryption
-      AP4_CencSampleInfoTable* sample_table{nullptr};
-      AP4_UI32 algorithm_id = 0;
 
       AP4_ContainerAtom* traf =
           AP4_DYNAMIC_CAST(AP4_ContainerAtom, moof->GetChild(AP4_ATOM_TYPE_TRAF, 0));
@@ -398,53 +339,14 @@ AP4_Result CFragmentedSampleReader::ProcessMoof(AP4_ContainerAtom* moof,
         traf->AddChild(new AP4_SencAtom());
       }
 
-      bool reset_iv(false);
-      if (AP4_FAILED(result = AP4_CencSampleInfoTable::Create(m_protectedDesc, traf, algorithm_id,
-                                                              reset_iv, *m_FragmentStream,
-                                                              moof_offset, sample_table)))
-        // we assume unencrypted fragment here
-        goto SUCCESS;
-
-      if (!m_singleSampleDecryptor)
-        return AP4_ERROR_INVALID_PARAMETERS;
-
-      m_decrypter = std::make_unique<CAdaptiveCencSampleDecrypter>(m_singleSampleDecryptor, sample_table);
-
-      // Inform decrypter of pattern decryption (CBCS)
-      AP4_UI32 schemeType = m_protectedDesc->GetSchemeType();
-      if (schemeType == AP4_PROTECTION_SCHEME_TYPE_CENC ||
-          schemeType == AP4_PROTECTION_SCHEME_TYPE_PIFF ||
-          schemeType == AP4_PROTECTION_SCHEME_TYPE_CBCS)
-      {
-        m_readerCryptoInfo.m_cryptBlocks = sample_table->GetCryptByteBlock();
-        m_readerCryptoInfo.m_skipBlocks = sample_table->GetSkipByteBlock();
-
-        if (schemeType == AP4_PROTECTION_SCHEME_TYPE_CENC ||
-            schemeType == AP4_PROTECTION_SCHEME_TYPE_PIFF)
-          m_readerCryptoInfo.m_mode = CryptoMode::AES_CTR;
-        else
-          m_readerCryptoInfo.m_mode = CryptoMode::AES_CBC;
-      }
-      else if (schemeType == AP4_PROTECTION_SCHEME_TYPE_CBC1 ||
-               schemeType == AP4_PROTECTION_SCHEME_TYPE_CENS)
-      {
-        LOG::LogF(LOGERROR, "Protection scheme %u not implemented.", schemeType);
-      }
-    }
-    else
-    {
-      // Reset for unencrypted content
-      m_decrypter.reset();
-      m_readerCryptoInfo = CryptoInfo();
+      // TODO: GetKey
+      AP4_CencSampleDecrypter* decrypter = nullptr;
+      AP4_CencSampleDecrypter::Create(m_protectedDesc, traf, *m_FragmentStream, moof_offset,
+                                      nullptr, 0, nullptr, nullptr, decrypter);
+      m_decrypter.reset(decrypter);
     }
   }
-SUCCESS:
-  if (m_singleSampleDecryptor && m_codecHandler)
-  {
-     m_singleSampleDecryptor->SetFragmentInfo(
-        m_poolId, m_defaultKey, m_codecHandler->m_naluLengthSize, m_codecHandler->m_extraData,
-        m_decrypterCaps.flags, m_readerCryptoInfo);
-  }
+
   return AP4_SUCCESS;
 }
 
@@ -519,9 +421,6 @@ void CFragmentedSampleReader::UpdateSampleDescription()
         break;
     }
   }
-
-  if ((m_decrypterCaps.flags & DRM::DecrypterCapabilites::SSD_ANNEXB_REQUIRED) != 0)
-    m_codecHandler->ExtraDataToAnnexB();
 }
 
 void CFragmentedSampleReader::ParseTrafTfrf(AP4_UuidAtom* uuidAtom)

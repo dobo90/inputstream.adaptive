@@ -1,6 +1,5 @@
 set(SOURCES
   AdaptationSet.cpp
-  AdaptiveCencSampleDecrypter.cpp
   AdaptiveStream.cpp
   AdaptiveTree.cpp
   AdaptiveTreeFactory.cpp
@@ -24,8 +23,6 @@ set(SOURCES
 
 set(HEADERS
   AdaptationSet.h
-  AdaptiveCencSampleDecrypter.h
-  AdaptiveDecrypter.h
   AdaptiveStream.h
   AdaptiveTree.h
   AdaptiveTreeFactory.h

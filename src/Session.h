@@ -20,8 +20,6 @@
 #include <kodi/platform/android/System.h>
 #endif
 
-class Adaptive_CencSingleSampleDecrypter;
-
 namespace SESSION
 {
 class ATTR_DLL_LOCAL CSession : public adaptive::AdaptiveStreamObserver
@@ -115,48 +113,15 @@ public:
    */
   unsigned int GetStreamCount() const { return static_cast<unsigned int>(m_streams.size()); }
 
-  /*!
-   * \brief Determines if the CDM session at specified index require Secure Path (TEE).
-   * \return True if Secure Path is required, otherwise false.
-   */
-  bool IsCDMSessionSecurePath(size_t index);
-
-  /*! \brief Get a session string (session id) by index from the cdm sessions
-   *  \param index The index (psshSet number) of the cdm session
-   *  \return The session string
-   */
-  const char* GetCDMSession(unsigned int index);
-
   /*! \brief Get the media type mask
    *  \return The media type mask
    */
   uint8_t GetMediaTypeMask() const { return m_mediaTypeMask; }
 
-  /*! \brief Get a single sample decrypter by index from the cdm sessions
-   *  \param index The index (psshSet number) of the cdm session
-   *  \return The single sample decrypter
-   */
-  Adaptive_CencSingleSampleDecrypter* GetSingleSampleDecryptor(unsigned int index) const;
-
   /*! \brief Get the decrypter (DRM lib)
    *  \return The decrypter
    */
   DRM::IDecrypter* GetDecrypter() { return m_decrypter; }
-
-  /*! \brief Get a single sample decrypter matching the session id provided
-   *  \param sessionId The session id string to match
-   *  \return The single sample decrypter
-   */
-  Adaptive_CencSingleSampleDecrypter* GetSingleSampleDecrypter(std::string sessionId);
-
-  /*! \brief Get decrypter capabilities for a single sample decrypter
-   *  \param index The index (psshSet number) of the cdm session
-   *  \return The single sample decrypter capabilities
-   */
-  const DRM::DecrypterCapabilites& GetDecrypterCaps(unsigned int index) const
-  {
-    return m_cdmSessions[index].m_decrypterCaps;
-  };
 
   /*! \brief Get the total time in ms of the stream
    *  \return The total time in ms of the stream
@@ -331,14 +296,6 @@ protected:
    */
   void SetSupportedDecrypterURN(std::vector<std::string_view>& keySystems);
 
-  /*! \brief Destroy all CencSingleSampleDecrypter instances
-   */
-  void DisposeSampleDecrypter();
-
-  /*! \brief Destroy the decrypter module instance
-   */
-  void DisposeDecrypter();
-
   bool ExtractStreamProtectionData(PLAYLIST::CPeriod::PSSHSet& sessionPsshset,
                                    std::vector<uint8_t>& initData,
                                    std::vector<std::string_view> keySystems);
@@ -346,17 +303,7 @@ protected:
 private:
   std::string m_manifestUrl;
   std::vector<uint8_t> m_serverCertificate;
-  std::unique_ptr<kodi::tools::CDllHelper> m_dllHelper;
   DRM::IDecrypter* m_decrypter{nullptr};
-
-  struct CCdmSession
-  {
-    DRM::DecrypterCapabilites m_decrypterCaps;
-    Adaptive_CencSingleSampleDecrypter* m_cencSingleSampleDecrypter{nullptr};
-    const char* m_cdmSessionStr{nullptr};
-    bool m_sharedCencSsd{false};
-  };
-  std::vector<CCdmSession> m_cdmSessions;
 
   adaptive::AdaptiveTree* m_adaptiveTree{nullptr};
   CHOOSER::IRepresentationChooser* m_reprChooser;

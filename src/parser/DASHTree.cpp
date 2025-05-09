@@ -643,7 +643,6 @@ void adaptive::CDashTree::ParseTagAdaptationSet(pugi::xml_node nodeAdp, PLAYLIST
   {
     period->SetEncryptionState(EncryptionState::NOT_SUPPORTED);
     ParseTagContentProtection(nodeAdp, adpSet->ProtectionSchemes());
-    period->SetSecureDecodeNeeded(ParseTagContentProtectionSecDec(nodeAdp));
   }
 
   // Parse <Representation> child tags
@@ -958,12 +957,6 @@ void adaptive::CDashTree::ParseTagRepresentation(pugi::xml_node nodeRepr,
         return;
       }
       repr->m_psshSetPos = psshSetPos;
-
-      if (ParseTagContentProtectionSecDec(nodeRepr))
-      {
-        LOG::LogF(LOGERROR, "The <ContentProtection><widevine:license> tag must be child of "
-                            "the <AdaptationSet> tag.");
-      }
     }
   }
 
@@ -1388,12 +1381,6 @@ bool adaptive::CDashTree::GetProtectionData(
     isEncrypted = true;
     if (selectedKid.empty())
       selectedKid = protCommon->kid;
-
-    // Set crypto mode
-    if (protCommon->value == "cenc")
-      m_cryptoMode = CryptoMode::AES_CTR;
-    else if (protCommon->value == "cbcs")
-      m_cryptoMode = CryptoMode::AES_CBC;
   }
 
   if (!selectedPssh.empty())
@@ -1404,38 +1391,6 @@ bool adaptive::CDashTree::GetProtectionData(
   kid = selectedKid;
 
   return isEncrypted;
-}
-
-bool adaptive::CDashTree::ParseTagContentProtectionSecDec(pugi::xml_node nodeParent)
-{
-  // Try to find ISA custom tag/attrib:
-  // <ContentProtection><widevine:license robustness_level="HW_SECURE_CODECS_REQUIRED">
-  // to know if its needed to force the secure decoder
-  for (xml_node nodeCP : nodeParent.children("ContentProtection"))
-  {
-    // Parse child tags
-    for (xml_node node : nodeCP.children())
-    {
-      if (STRING::Compare(node.name(), "widevine:license"))
-      {
-        // <widevine:license robustness_level="HW_SECURE_CODECS_REQUIRED"> Custom ISA tag
-        // to force secure decoder, accepted in the <AdaptationSet> only
-
-        //! @TODO: Since this param is set to Period, we could think to deprecate
-        //! this support and add a custom tag in the Period itself
-        std::string_view robustnessLevel = XML::GetAttrib(nodeCP, "robustness_level");
-        if (robustnessLevel == "HW")
-        {
-          LOG::LogF(LOGWARNING, "The value \"HW\" of attribute \"robustness_level\" in "
-                                "<widevine:license> tag is now deprecated. "
-                                "You must change it to \"HW_SECURE_CODECS_REQUIRED\".");
-          robustnessLevel = "HW_SECURE_CODECS_REQUIRED";
-        }
-        return robustnessLevel == "HW_SECURE_CODECS_REQUIRED";
-      }
-    }
-  }
-  return false;
 }
 
 uint32_t adaptive::CDashTree::ParseAudioChannelConfig(pugi::xml_node node)

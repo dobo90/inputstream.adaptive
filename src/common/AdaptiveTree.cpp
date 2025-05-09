@@ -148,7 +148,6 @@ namespace adaptive
     psshSet.defaultKID_ = defaultKID;
     psshSet.m_licenseUrl = licenseUrl;
     psshSet.iv = iv;
-    psshSet.m_cryptoMode = m_cryptoMode;
     psshSet.adaptation_set_ = adp;
 
     if (streamType == StreamType::VIDEO)
