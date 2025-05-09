@@ -79,12 +79,6 @@ public:
   virtual StreamSelection GetStreamSelectionMode() { return StreamSelection::AUTO; }
 
   /*!
-   * \brief Called at each DRM initialization to set if the secure session is currently being used.
-   * \param isSecureSession Set true if a secure session is in use
-   */
-  virtual void SetSecureSession(const bool isSecureSession) { m_isSecureSession = isSecureSession; }
-
-  /*!
    * \brief Get the representation from an adaptation set
    * \param adp The adaptation set where choose the representation
    * \return The representation
@@ -130,8 +124,6 @@ protected:
    */
   void LogDetails(const PLAYLIST::CRepresentation* currentRep,
                   const PLAYLIST::CRepresentation* nextRep);
-
-  bool m_isSecureSession{false};
 
   // Current screen width resolution (this value is auto-updated by Kodi)
   int m_screenCurrentWidth{0};

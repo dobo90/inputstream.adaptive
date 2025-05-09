@@ -50,7 +50,6 @@ public:
   std::string GetChooserType() const;
 
   std::pair<int, int> GetResMax() const;
-  std::pair<int, int> GetResSecureMax() const;
   std::pair<int, int> GetResRangeLimit() const;
 
   bool IsBandwidthInitAuto() const;
@@ -68,7 +67,6 @@ public:
 
   int GetMediaType() const;
 
-  bool IsDisableSecureDecoder() const;
   std::string GetDecrypterPath() const; // Widevine decrypter binary path
 
   bool IsDebugLicense() const;

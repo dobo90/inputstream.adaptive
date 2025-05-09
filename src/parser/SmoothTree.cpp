@@ -99,8 +99,6 @@ bool adaptive::CSmoothTree::ParseManifest(const std::string& data)
   xml_node nodeProt = nodeSSM.child("Protection");
   if (nodeProt)
   {
-    period->SetSecureDecodeNeeded(true);
-
     for (xml_node nodePH : nodeProt.children("ProtectionHeader"))
     {
       // SystemID can be wrapped by {}
@@ -114,12 +112,6 @@ bool adaptive::CSmoothTree::ParseManifest(const std::string& data)
           drmInfo.licenseServerUri = protParser.GetLicenseURL();
           drmInfo.initData = DRM::PSSH::Make(DRM::ID_PLAYREADY, {}, protParser.GetInitData());
           drmInfo.defaultKid = STRING::ToLower(STRING::ToHexadecimal(protParser.GetKID()));
-
-          auto encryptionType = protParser.GetEncryption();
-          if (encryptionType == DRM::PRHeaderParser::EncryptionType::AESCTR)
-            drmInfo.cryptoMode = CryptoMode::AES_CTR;
-          else if (encryptionType == DRM::PRHeaderParser::EncryptionType::AESCBC)
-            drmInfo.cryptoMode = CryptoMode::AES_CBC;
 
           drmInfos.emplace_back(drmInfo);
         }
