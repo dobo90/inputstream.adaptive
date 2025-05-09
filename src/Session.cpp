@@ -165,7 +165,12 @@ bool SESSION::CSession::CheckPlayableStreams(PLAYLIST::CPeriod* period)
                                             false, isInfo, repr.get(),
                                             adp.get(), false, initDrmInfo))
           {
-            // TODO: GetKeysFromLicenseServer
+            auto cdm = m_drmEngine.GetCdm();
+            auto defaultKid = DRM::ConvertKidStrToBytes(initDrmInfo.defaultKid);
+            if (!cdm->GetKeysFromLicenseServer(initDrmInfo.initData, defaultKid) && !defaultKid.empty())
+            {
+              repr->isPlayable = false;
+            }
           }
           else
           {
@@ -606,7 +611,12 @@ bool SESSION::CSession::PrepareStream(CStream* stream, uint64_t startPts)
       return false;
     }
 
-    // TODO: GetKeysFromLicenseServer
+    auto cdm = m_drmEngine.GetCdm();
+    auto defaultKid = DRM::ConvertKidStrToBytes(initDrmInfo.defaultKid);
+    if (!cdm->GetKeysFromLicenseServer(initDrmInfo.initData, defaultKid) && !defaultKid.empty())
+    {
+      repr->isPlayable = false;
+    }
   }
 
   stream->m_adStream.start_stream(startPts);
@@ -619,7 +629,7 @@ bool SESSION::CSession::PrepareStream(CStream* stream, uint64_t startPts)
   if (!reader)
     return false;
 
-  // TODO: SetCdm
+  reader->SetCdm(GetDRMEngine().GetCdm());
   stream->SetReader(std::move(reader));
 
   if (reprContainerType == ContainerType::TS)

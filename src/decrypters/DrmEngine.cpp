@@ -45,7 +45,7 @@ STREAM_CRYPTO_KEY_SYSTEM KSToCryptoKeySystem(std::string_view keySystem)
     return STREAM_CRYPTO_KEY_SYSTEM_NONE;
 }
 
-SResult CreateDRM(std::string_view keySystem, std::shared_ptr<DRM::IDecrypter>& drm)
+SResult CreateDRM(std::string_view keySystem, std::shared_ptr<DRM::Cdm>& drm)
 {
   std::string decrypterPath = CSrvBroker::GetSettings().GetDecrypterPath();
   if (decrypterPath.empty())
@@ -54,7 +54,7 @@ SResult CreateDRM(std::string_view keySystem, std::shared_ptr<DRM::IDecrypter>& 
     return SResult::Error(GUI::GetLocalizedString(30302));
   }
 
-  drm = DRM::FACTORY::GetDecrypter(KSToCryptoKeySystem(keySystem));
+  drm = DRM::FACTORY::GetCdm(KSToCryptoKeySystem(keySystem));
 
   if (!drm)
   {
@@ -231,7 +231,7 @@ bool DRM::CDRMEngine::InitializeSession(std::vector<DRM::DRMInfo> drmInfos,
     //! @todo: to test a way to preinitialize DRM when manifest is downloaded/parsed
     //! in the hoping to have a more smoother playback transition
     //! this can be tested with multiperiods video where first period is unencrypted and second one DRM crypted
-    std::shared_ptr<DRM::IDecrypter> drm;
+    std::shared_ptr<DRM::Cdm> drm;
     SResult ret = CreateDRM(m_keySystem, drm);
     if (ret.IsFailed())
     {
@@ -241,6 +241,21 @@ bool DRM::CDRMEngine::InitializeSession(std::vector<DRM::DRMInfo> drmInfos,
       return false;
     }
     m_drms.emplace(m_keySystem, drm);
+  }
+
+  auto cdm = GetCdm();
+  if (!cdm->IsInitialised())
+  {
+    DRM::Config drmCfg = DRM::CreateDRMConfig(m_keySystem, drmPropCfg);
+    const SResult ret = cdm->OpenDRMSystem(drmCfg);
+
+    if (ret.IsFailed())
+    {
+      LOG::LogF(LOGERROR, "Failed to open the DRM");
+      m_status = EngineStatus::DRM_ERROR;
+      GUI::ErrorDialog(ret.Message());
+      return false;
+    }
   }
 
   // Create crypto session
@@ -455,4 +470,11 @@ void DRM::CDRMEngine::Dispose()
 {
   LOG::Log(LOGDEBUG, "Dispose DRM Engine");
   m_drms.clear();
+}
+
+std::shared_ptr<DRM::Cdm> DRM::CDRMEngine::GetCdm() const
+{
+  auto it = m_drms.find(m_keySystem);
+
+  return it != std::end(m_drms) ? it->second : nullptr;
 }
