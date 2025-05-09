@@ -639,7 +639,6 @@ void adaptive::CDashTree::ParseTagAdaptationSet(pugi::xml_node nodeAdp, PLAYLIST
   if (nodeAdp.child("ContentProtection"))
   {
     ParseTagContentProtection(nodeAdp, adpSet->ProtectionSchemes());
-    period->SetSecureDecodeNeeded(ParseTagContentProtectionSecDec(nodeAdp));
   }
 
   // Parse <Representation> child tags
@@ -1216,12 +1215,6 @@ void adaptive::CDashTree::ParseTagContentProtection(
           protScheme.pssh =
               BASE64::Encode(DRM::PSSH::Make(DRM::ID_PLAYREADY, {}, parser.GetInitData()));
           protScheme.licenseUrl = parser.GetLicenseURL();
-
-          auto encryptionType = parser.GetEncryption();
-          if (encryptionType == DRM::PRHeaderParser::EncryptionType::AESCTR)
-            protScheme.value = "cenc";
-          else if (encryptionType == DRM::PRHeaderParser::EncryptionType::AESCBC)
-            protScheme.value = "cbcs";
         }
       }
     }
@@ -1241,7 +1234,6 @@ void adaptive::CDashTree::GetProtectionData(
 {
   reprProtSchemes.insert(reprProtSchemes.end(), adpProtSchemes.begin(), adpProtSchemes.end());
 
-  CryptoMode cryptoMode = CryptoMode::AES_CTR; // default cenc
   bool isCencSchemeOnly{false}; // ContentProtection with cenc only, no DRM scheme provided
 
   // Find the encryption scheme
@@ -1249,14 +1241,6 @@ void adaptive::CDashTree::GetProtectionData(
   {
     if (protScheme.idUri == "urn:mpeg:dash:mp4protection:2011")
     {
-      std::string_view encryptionScheme = protScheme.value;
-      if (encryptionScheme == "cenc")
-        cryptoMode = CryptoMode::AES_CTR;
-      else if (encryptionScheme == "cbcs")
-        cryptoMode = CryptoMode::AES_CBC;
-      else if (!encryptionScheme.empty())
-        LOG::LogF(LOGERROR, "Unsupported encryption scheme: %s", encryptionScheme.data());
-
       isCencSchemeOnly = reprProtSchemes.size() == 1;
       break;
     }
@@ -1294,48 +1278,12 @@ void adaptive::CDashTree::GetProtectionData(
 
       drmInfo.initData = initData;
       drmInfo.licenseServerUri = protScheme.licenseUrl;
-      drmInfo.cryptoMode = cryptoMode;
       if (!keyIds.empty())
         drmInfo.defaultKid = *keyIds.begin();
 
       repr.AddDrmInfo(drmInfo);
     }
   }
-}
-
-std::optional<bool> adaptive::CDashTree::ParseTagContentProtectionSecDec(pugi::xml_node nodeParent)
-{
-  // Try to find ISA custom tag/attrib:
-  // <ContentProtection><widevine:license robustness_level="HW_SECURE_CODECS_REQUIRED">
-  // to know if its needed to force the secure decoder
-  for (xml_node nodeCP : nodeParent.children("ContentProtection"))
-  {
-    // Parse child tags
-    for (xml_node node : nodeCP.children())
-    {
-      if (STRING::Compare(node.name(), "widevine:license"))
-      {
-        // <widevine:license robustness_level="HW_SECURE_CODECS_REQUIRED"> Custom ISA tag
-        // to force secure decoder, accepted in the <AdaptationSet> only
-
-        //! @TODO: Since this param is set to Period, we could think to deprecate
-        //! this support and add a custom tag in the Period itself
-        std::string_view robustnessLevel = XML::GetAttrib(nodeCP, "robustness_level");
-        if (robustnessLevel == "HW")
-        {
-          LOG::LogF(LOGWARNING, "The value \"HW\" of attribute \"robustness_level\" in "
-                                "<widevine:license> tag is now deprecated. "
-                                "You must change it to \"HW_SECURE_CODECS_REQUIRED\".");
-          robustnessLevel = "HW_SECURE_CODECS_REQUIRED";
-        }
-        if (robustnessLevel == "HW_SECURE_CODECS_NOT_ALLOWED")
-          return false;
-        else if (robustnessLevel == "HW_SECURE_CODECS_REQUIRED")
-          return true;
-      }
-    }
-  }
-  return std::nullopt;
 }
 
 uint32_t adaptive::CDashTree::ParseAudioChannelConfig(pugi::xml_node node)

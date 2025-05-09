@@ -28,7 +28,6 @@ public:
   ~CRepresentationChooserDefault() override {}
 
   virtual void Initialize(const ADP::KODI_PROPS::ChooserProps& props) override;
-  virtual void SetSecureSession(const bool isSecureSession) override;
   virtual void PostInit() override;
 
   void SetDownloadSpeed(const double speed) override;
@@ -54,7 +53,6 @@ protected:
   std::optional<std::chrono::steady_clock::time_point> m_screenResLastUpdate;
 
   std::pair<int, int> m_screenResMax; // Max resolution for non-protected video content
-  std::pair<int, int> m_screenResSecureMax; // Max resolution for protected video content
 
   // Ignore screen resolution, from playback starts and when it changes while playing
   bool m_ignoreScreenRes{false};
