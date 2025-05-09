@@ -9,6 +9,9 @@
 #pragma once
 
 #include <cstdint>
+#include <map>
+#include <optional>
+#include <shared_mutex>
 #include <string_view>
 #include <vector>
 
@@ -16,10 +19,10 @@
 
 namespace DRM
 {
-class IDecrypter
+class Cdm
 {
 public:
-  virtual ~IDecrypter(){};
+  virtual ~Cdm() {};
 
   /**
    * \brief Initialize the decrypter library
@@ -56,5 +59,17 @@ public:
    * \param libraryPath Filesystem path for the decrypter to locate any needed files such as CDMs
    */
   virtual void SetLibraryPath(std::string_view libraryPath) = 0;
+
+  virtual bool GetKeysFromLicenseServer(const std::vector<uint8_t>& pssh,
+                                        const std::vector<uint8_t>& kid) = 0;
+
+  std::optional<std::vector<uint8_t>> GetKey(const std::vector<uint8_t>& kid);
+
+protected:
+  void AddKey(std::vector<uint8_t> kid, std::vector<uint8_t> key);
+
+private:
+  std::map<std::vector<uint8_t>, std::vector<uint8_t>> m_keys;
+  std::shared_mutex m_keysMutex;
 };
 }; // namespace DRM

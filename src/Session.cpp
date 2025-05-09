@@ -77,8 +77,8 @@ CSession::~CSession()
   delete m_reprChooser;
   m_reprChooser = nullptr;
 
-  delete m_decrypter;
-  m_decrypter = nullptr;
+  delete m_cdm;
+  m_cdm = nullptr;
 }
 
 void SESSION::CSession::DeleteStreams()
@@ -96,18 +96,19 @@ void CSession::SetSupportedDecrypterURN(std::vector<std::string_view>& keySystem
     return;
   }
 
-  m_decrypter = DRM::FACTORY::GetDecrypter(GetCryptoKeySystem());
-  if (!m_decrypter)
+  delete m_cdm;
+  m_cdm = DRM::FACTORY::GetCdm(GetCryptoKeySystem());
+  if (!m_cdm)
     return;
 
-  if (!m_decrypter->Initialize())
+  if (!m_cdm->Initialize())
   {
     LOG::Log(LOGERROR, "The decrypter library cannot be initialized.");
     return;
   }
 
-  keySystems = m_decrypter->SelectKeySystems(CSrvBroker::GetKodiProps().GetLicenseType());
-  m_decrypter->SetLibraryPath(decrypterPath);
+  keySystems = m_cdm->SelectKeySystems(CSrvBroker::GetKodiProps().GetLicenseType());
+  m_cdm->SetLibraryPath(decrypterPath);
 }
 
 /*----------------------------------------------------------------------
@@ -208,23 +209,25 @@ bool CSession::Initialize()
   return InitializePeriod(isSessionOpened);
 }
 
-void CSession::CheckHDCP()
+void CSession::CheckHDCP(const std::vector<size_t>& psshSetsWithoutKey)
 {
   uint32_t adpIndex{0};
   CAdaptationSet* adp{nullptr};
 
+  if (psshSetsWithoutKey.empty())
+  {
+    return;
+  }
+
   while ((adp = m_adaptiveTree->GetAdaptationSet(adpIndex++)))
   {
-    if (adp->GetStreamType() != StreamType::VIDEO)
-      continue;
-
     for (auto itRepr = adp->GetRepresentations().begin();
          itRepr != adp->GetRepresentations().end();)
     {
       CRepresentation* repr = (*itRepr).get();
 
-      // TODO: finish HDCP
-      if (false)
+      if (std::find(psshSetsWithoutKey.begin(), std::end(psshSetsWithoutKey),
+                    repr->GetPsshSetPos()) != std::end(psshSetsWithoutKey))
       {
         LOG::Log(LOGDEBUG, "Representation ID \"%s\" removed as not HDCP compliant",
                  repr->GetId().data());
@@ -268,15 +271,15 @@ bool CSession::PreInitializeDRM(std::string& challengeB64,
     return false;
   }
 
-  if (!m_decrypter)
+  if (!m_cdm)
   {
     LOG::LogF(LOGERROR, "No decrypter found for encrypted stream");
     return false;
   }
 
-  if (!m_decrypter->IsInitialised())
+  if (!m_cdm->IsInitialised())
   {
-    if (!m_decrypter->OpenDRMSystem(licenseKey, m_serverCertificate, m_drmConfig))
+    if (!m_cdm->OpenDRMSystem(licenseKey, m_serverCertificate, m_drmConfig))
     {
       LOG::LogF(LOGERROR, "OpenDRMSystem failed");
       return false;
@@ -294,7 +297,7 @@ bool CSession::PreInitializeDRM(std::string& challengeB64,
   std::string hexKid{STRING::ToHexadecimal(decKid)};
   LOG::LogF(LOGDEBUG, "Initializing session with KID: %s", hexKid.c_str());
 
-  // TODO: GetKeysFromLicenseServer
+  m_cdm->GetKeysFromLicenseServer(initData, decKid);
   isSessionOpened = true;
 
   return true;
@@ -302,6 +305,7 @@ bool CSession::PreInitializeDRM(std::string& challengeB64,
 
 bool CSession::InitializeDRM(bool addDefaultKID /* = false */)
 {
+  std::vector<size_t> psshSetsWithoutKey;
   // Try to initialize an SingleSampleDecryptor
   if (m_adaptiveTree->m_currentPeriod->GetEncryptionState() == EncryptionState::ENCRYPTED_DRM)
   {
@@ -312,15 +316,15 @@ bool CSession::InitializeDRM(bool addDefaultKID /* = false */)
 
     LOG::Log(LOGDEBUG, "Entering encryption section");
 
-    if (!m_decrypter)
+    if (!m_cdm)
     {
       LOG::Log(LOGERROR, "No decrypter found for encrypted stream");
       return false;
     }
 
-    if (!m_decrypter->IsInitialised())
+    if (!m_cdm->IsInitialised())
     {
-      if (!m_decrypter->OpenDRMSystem(licenseKey, m_serverCertificate, m_drmConfig))
+      if (!m_cdm->OpenDRMSystem(licenseKey, m_serverCertificate, m_drmConfig))
       {
         LOG::Log(LOGERROR, "OpenDRMSystem failed");
         return false;
@@ -420,7 +424,10 @@ bool CSession::InitializeDRM(bool addDefaultKID /* = false */)
 
       const std::vector<uint8_t> defaultKid = DRM::ConvertKidStrToBytes(defaultKidStr);
 
-      // TODO: GetKeysFromLicenseServer
+      if (!m_cdm->GetKeysFromLicenseServer(initData, defaultKid) && !defaultKid.empty())
+      {
+        psshSetsWithoutKey.push_back(i);
+      }
     }
   }
 
@@ -429,7 +436,7 @@ bool CSession::InitializeDRM(bool addDefaultKID /* = false */)
     LOG::Log(LOGDEBUG, "Ignore HDCP status is enabled");
 
   if (!isHdcpOverride)
-    CheckHDCP();
+    CheckHDCP(psshSetsWithoutKey);
 
   return true;
 }

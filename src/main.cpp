@@ -256,7 +256,7 @@ bool CInputStreamAdaptive::OpenStream(int streamid)
 
   uint16_t psshSetPos = stream->m_adStream.getRepresentation()->m_psshSetPos;
   reader->UpdateSampleDescription();
-  // TODO: SetCdm
+  reader->SetCdm(m_session->GetCdm());
 
   stream->SetReader(std::move(reader));
 

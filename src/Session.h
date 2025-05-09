@@ -11,7 +11,7 @@
 #include "Stream.h"
 #include "common/AdaptiveStream.h"
 #include "common/AdaptiveTree.h"
-#include "decrypters/IDecrypter.h"
+#include "decrypters/Cdm.h"
 
 #include <bento4/Ap4.h>
 #include <kodi/tools/DllHelper.h>
@@ -38,7 +38,7 @@ public:
   /*
    * \brief Check HDCP parameters to remove unplayable representations
    */
-  void CheckHDCP();
+  void CheckHDCP(const std::vector<size_t>& psshSetsWithoutKey);
 
   /*! \brief Pre-Initialize the DRM
    *  \param challengeB64 [OUT] Provide the challenge data as base64
@@ -118,10 +118,7 @@ public:
    */
   uint8_t GetMediaTypeMask() const { return m_mediaTypeMask; }
 
-  /*! \brief Get the decrypter (DRM lib)
-   *  \return The decrypter
-   */
-  DRM::IDecrypter* GetDecrypter() { return m_decrypter; }
+  DRM::Cdm* GetCdm() { return m_cdm; }
 
   /*! \brief Get the total time in ms of the stream
    *  \return The total time in ms of the stream
@@ -303,7 +300,7 @@ protected:
 private:
   std::string m_manifestUrl;
   std::vector<uint8_t> m_serverCertificate;
-  DRM::IDecrypter* m_decrypter{nullptr};
+  DRM::Cdm* m_cdm{nullptr};
 
   adaptive::AdaptiveTree* m_adaptiveTree{nullptr};
   CHOOSER::IRepresentationChooser* m_reprChooser;
