@@ -14,8 +14,6 @@
 #include <shared_mutex>
 #include <string_view>
 
-#include <kodi/c-api/addon-instance/inputstream/stream_crypto.h>
-
 namespace DRM
 {
 class Cdm

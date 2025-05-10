@@ -12,6 +12,8 @@
 
 #include <memory>
 
+#include <kodi/c-api/addon-instance/inputstream/stream_crypto.h>
+
 namespace ADP
 {
 namespace KODI_PROPS

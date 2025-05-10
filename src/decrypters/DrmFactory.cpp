@@ -8,11 +8,14 @@
 
 #include "DrmFactory.h"
 
+#include <kodi/c-api/addon-instance/inputstream/stream_crypto.h>
+
 #include "CompKodiProps.h"
 #include "Helpers.h"
 #include "utils/Base64Utils.h"
 #include "utils/StringUtils.h"
 #include "utils/log.h"
+#include "widevine/WidevineCdm.h"
 
 #include <kodi/addon-instance/inputstream/StreamCrypto.h>
 
@@ -95,5 +98,10 @@ DRM::Config DRM::CreateDRMConfig(std::string_view keySystem, const ADP::KODI_PRO
 
 std::shared_ptr<DRM::Cdm> DRM::FACTORY::GetCdm(STREAM_CRYPTO_KEY_SYSTEM keySystem)
 {
+  if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_WIDEVINE)
+  {
+    return std::shared_ptr<DRM::Cdm>(new WidevineCdm());
+  }
+
   return nullptr;
 }
