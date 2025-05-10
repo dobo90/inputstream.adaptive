@@ -8,9 +8,18 @@
 
 #include "DrmFactory.h"
 
+#include "widevine/WidevineCdm.h"
+
+#include <kodi/c-api/addon-instance/inputstream/stream_crypto.h>
+
 using namespace DRM;
 
 Cdm* DRM::FACTORY::GetCdm(STREAM_CRYPTO_KEY_SYSTEM keySystem)
 {
+  if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_WIDEVINE)
+  {
+    return new WidevineCdm();
+  }
+
   return nullptr;
 }
