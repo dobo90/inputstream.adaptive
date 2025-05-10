@@ -14,6 +14,8 @@
 #include "utils/StringUtils.h"
 #include "utils/log.h"
 
+#include "widevine/WidevineCdm.h"
+
 #include <kodi/addon-instance/inputstream/StreamCrypto.h>
 
 using namespace UTILS;
@@ -93,12 +95,17 @@ DRM::Config DRM::CreateDRMConfig(std::string_view keySystem, const ADP::KODI_PRO
 
 std::shared_ptr<DRM::Cdm> DRM::FACTORY::GetCdm(STREAM_CRYPTO_KEY_SYSTEM keySystem)
 {
+  if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_WIDEVINE)
+  {
+    return std::make_shared<WidevineCdm>();
+  }
+
   return nullptr;
 }
 
 std::vector<std::shared_ptr<DRM::Cdm>> DRM::FACTORY::GetCdms()
 {
-  std::vector<std::shared_ptr<DRM::Cdm>> cdms;
+  std::vector<std::shared_ptr<DRM::Cdm>> cdms{std::make_shared<WidevineCdm>()};
 
   return cdms;
 }
