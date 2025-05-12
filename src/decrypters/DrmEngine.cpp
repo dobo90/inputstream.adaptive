@@ -102,7 +102,7 @@ void DRM::CDRMEngine::Initialize()
 
   // Widevine currently always preferred as first because on android can reach 4k on L1 devices
   m_supportedKs.emplace_back(KS_WIDEVINE);
-  // TODO: m_supportedKs.emplace_back(KS_PLAYREADY);
+  m_supportedKs.emplace_back(KS_PLAYREADY);
   m_supportedKs.emplace_back(KS_CLEARKEY);
 
   // Sort key systems based on priorities
