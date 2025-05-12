@@ -8,6 +8,7 @@
 
 #include "DrmFactory.h"
 
+#include "clearkey/ClearKeyCdm.h"
 #include "playready/PlayReadyCdm.h"
 #include "widevine/WidevineCdm.h"
 
@@ -24,6 +25,10 @@ Cdm* DRM::FACTORY::GetCdm(STREAM_CRYPTO_KEY_SYSTEM keySystem)
   else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_PLAYREADY)
   {
     return new PlayreadyCdm();
+  }
+  else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_CLEARKEY)
+  {
+    return new ClearKeyCdm();
   }
 
   return nullptr;
