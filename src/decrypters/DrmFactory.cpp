@@ -13,6 +13,8 @@
 #include "utils/Base64Utils.h"
 #include "utils/StringUtils.h"
 #include "utils/log.h"
+
+#include "playready/PlayReadyCdm.h"
 #include "widevine/WidevineCdm.h"
 
 #include <kodi/addon-instance/inputstream/StreamCrypto.h>
@@ -98,6 +100,10 @@ std::shared_ptr<DRM::Cdm> DRM::FACTORY::GetCdm(STREAM_CRYPTO_KEY_SYSTEM keySyste
   if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_WIDEVINE)
   {
     return std::shared_ptr<DRM::Cdm>(new WidevineCdm());
+  }
+  else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_PLAYREADY)
+  {
+    return std::shared_ptr<DRM::Cdm>(new PlayreadyCdm());
   }
 
   return nullptr;
