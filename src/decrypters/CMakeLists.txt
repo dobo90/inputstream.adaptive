@@ -13,3 +13,4 @@ set(HEADERS
 add_dir_sources(SOURCES HEADERS)
 
 add_subdirectory(widevine)
+add_subdirectory(playready)
