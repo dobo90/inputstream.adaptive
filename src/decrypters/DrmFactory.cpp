@@ -14,6 +14,7 @@
 #include "utils/StringUtils.h"
 #include "utils/log.h"
 
+#include "playready/PlayReadyCdm.h"
 #include "widevine/WidevineCdm.h"
 
 #include <kodi/addon-instance/inputstream/StreamCrypto.h>
@@ -99,13 +100,18 @@ std::shared_ptr<DRM::Cdm> DRM::FACTORY::GetCdm(STREAM_CRYPTO_KEY_SYSTEM keySyste
   {
     return std::make_shared<WidevineCdm>();
   }
+  else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_PLAYREADY)
+  {
+    return std::make_shared<PlayreadyCdm>();
+  }
 
   return nullptr;
 }
 
 std::vector<std::shared_ptr<DRM::Cdm>> DRM::FACTORY::GetCdms()
 {
-  std::vector<std::shared_ptr<DRM::Cdm>> cdms{std::make_shared<WidevineCdm>()};
+  std::vector<std::shared_ptr<DRM::Cdm>> cdms{std::make_shared<WidevineCdm>(),
+                                              std::make_shared<PlayreadyCdm>()};
 
   return cdms;
 }
