@@ -430,6 +430,10 @@ bool CSession::InitializeDRM(bool addDefaultKID /* = false */)
       }
     }
   }
+  else if (m_cdm && !m_cdm->IsInitialised())
+  {
+    m_cdm->OpenDRMSystem({}, {}, 0);
+  }
 
   bool isHdcpOverride = CSrvBroker::GetSettings().IsHdcpOverride();
   if (isHdcpOverride)
