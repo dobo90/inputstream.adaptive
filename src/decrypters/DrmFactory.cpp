@@ -14,6 +14,7 @@
 #include "utils/StringUtils.h"
 #include "utils/log.h"
 
+#include "clearkey/ClearKeyCdm.h"
 #include "playready/PlayReadyCdm.h"
 #include "widevine/WidevineCdm.h"
 
@@ -103,6 +104,10 @@ std::shared_ptr<DRM::Cdm> DRM::FACTORY::GetCdm(STREAM_CRYPTO_KEY_SYSTEM keySyste
   else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_PLAYREADY)
   {
     return std::shared_ptr<DRM::Cdm>(new PlayreadyCdm());
+  }
+  else if (keySystem == STREAM_CRYPTO_KEY_SYSTEM_CLEARKEY)
+  {
+    return std::shared_ptr<DRM::Cdm>(new ClearKeyCdm());
   }
 
   return nullptr;
