@@ -61,9 +61,6 @@ else()
   add_definitions(-D__STDC_FORMAT_MACROS)
 endif()
 
-add_compile_options(-fsanitize=address -fno-inline)
-add_link_options(-fsanitize=address -fno-inline)
-
 # Sources to build
 # (use add_dir_sources function to add source/header files from the CMakeLists files of subdirectories)
 add_subdirectory(src)
