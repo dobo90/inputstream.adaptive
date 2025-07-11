@@ -12,6 +12,8 @@ set(CMAKE_FIND_FRAMEWORK LAST)
 # Sets the default path where the CDM library is contained (affects the default value of the add-on settings)
 set(DECRYPTERPATH "special://home/cdm")
 
+set(CMAKE_CXX_STANDARD 20)
+
 find_package(Kodi REQUIRED)
 find_package(pugixml REQUIRED)
 find_package(Bento4 REQUIRED)
