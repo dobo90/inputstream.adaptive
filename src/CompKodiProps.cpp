@@ -585,7 +585,12 @@ void ADP::KODI_PROPS::CCompKodiProps::ParseDrmOldProps(
 
       // Field 3: HTTP request data (POST request)
       if (fieldCount >= 3)
-        drmCfg.license.reqData = fields[2];
+      {
+        if (fields[2][0] == '%')
+          drmCfg.license.reqData = UTILS::STRING::URLDecode(fields[2]);
+        else
+          drmCfg.license.reqData = fields[2];
+      }
 
       // Field 4: HTTP response data (license wrappers)
       if (fieldCount >= 4)
