@@ -357,6 +357,14 @@ bool DRM::WvWrapLicense(std::string& data,
     const std::string krDec = STRING::ToDecimal(challenge.data(), challenge.size());
     STRING::ReplaceFirst(data, "{CHA-DEC}", krDec);
   }
+  else if (STRING::Contains(data, "{CHA-JSON}", false))
+  {
+    std::string_view krStr{reinterpret_cast<const char*>(challenge.data()), challenge.size()};
+    njson jsonStr = krStr;
+    std::string escaped = jsonStr.dump();
+    const std::string_view sv{std::begin(escaped) + 1, std::end(escaped) - 1}; // skip quotes
+    STRING::ReplaceFirst(data, "{CHA-JSON}", sv);
+  }
 
   // SESSION ID - Placeholder {SID-?}
 
