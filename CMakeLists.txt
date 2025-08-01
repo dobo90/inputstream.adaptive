@@ -47,6 +47,7 @@ if(WIN32)
   if(MSVC)
     # Allow build for WindowsStore with Visual Studio
     add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
+    list(APPEND DEPLIBS bcrypt.lib)
   endif()
   # Allow unicode build for windows api
   add_definitions(-DUNICODE -D_UNICODE)
