@@ -43,9 +43,6 @@ void FillDrmConfigDefaults(std::string_view keySystem, DRM::Config& cfg)
     {
       if (!STRING::KeyExists(licCfg.reqHeaders, "Content-Type"))
         licCfg.reqHeaders["Content-Type"] = "text/xml";
-      if (!STRING::KeyExists(licCfg.reqHeaders, "SOAPAction"))
-        licCfg.reqHeaders["SOAPAction"] =
-            "http://schemas.microsoft.com/DRM/2007/03/protocols/AcquireLicense";
     }
   }
   else if (keySystem == DRM::KS_WISEPLAY)
