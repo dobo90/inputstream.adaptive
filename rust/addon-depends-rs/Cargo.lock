@@ -117,9 +117,9 @@ dependencies = [
 
 [[package]]
 name = "bytemuck"
-version = "1.23.2"
+version = "1.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3995eaeebcdf32f91f980d360f78732ddc061097ab4e39991ae7a6ace9194677"
+checksum = "1fbdf580320f38b612e485521afda1ee26d10cc9884efaaa750d383e13e3c5f4"
 
 [[package]]
 name = "byteorder"
@@ -682,9 +682,9 @@ dependencies = [
 
 [[package]]
 name = "playready"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dc49882ad11de283d0b2d48a5a9c238754427ddf750510d8a19fcf4ba2be2d3"
+checksum = "d23714924e9a4bc8729dd8c70b0e2d647652a4c699c0a5c621463059db906515"
 dependencies = [
  "aes",
  "base64",
@@ -706,9 +706,9 @@ dependencies = [
 
 [[package]]
 name = "playready-ffi"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b102dbd23ed0b147072adb11d790a607491911e51a9775e0c30acb07f682dfd7"
+checksum = "591413a15b0d92acc62e039b65f060b07a44a3db8d52d685fe361314cbc31fd6"
 dependencies = [
  "playready",
  "safer-ffi",
@@ -716,9 +716,9 @@ dependencies = [
 
 [[package]]
 name = "playready-macros"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88a189698c66530476e1cdd3d392046d2cf0335d6733ed8fabb876cb2d801aeb"
+checksum = "3c888b2c39d4f6248f9588fc0b26d13700af58a366e3a7c739ef15201cae9866"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -908,9 +908,12 @@ dependencies = [
 
 [[package]]
 name = "roxmltree"
-version = "0.20.0"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c20b6793b5c2fa6553b250154b78d6d0db37e72700ae35fad9387a46f487c97"
+checksum = "963e3e7a0795e975f0a57b8a3caf100a2d4ced3758a5d18e6bd6b9aea854f53f"
+dependencies = [
+ "memchr",
+]
 
 [[package]]
 name = "rsa"
@@ -1259,9 +1262,9 @@ dependencies = [
 
 [[package]]
 name = "typenum"
-version = "1.18.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dccffe3ce07af9386bfd29e80c0ab1a8205a2fc34e4bcd40364df902cfa8f3f"
+checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
 
 [[package]]
 name = "unicode-ident"
@@ -1517,9 +1520,9 @@ dependencies = [
 
 [[package]]
 name = "zeroize"
-version = "1.8.1"
+version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ced3678a2879b30306d323f4542626697a464a97c0a07c9aebf7ebca65cd4dde"
+checksum = "b97154e67e32c85465826e8bcc1c59429aaaf107c1e4a9e53c8d8ccd5eff88d0"
 dependencies = [
  "zeroize_derive",
 ]

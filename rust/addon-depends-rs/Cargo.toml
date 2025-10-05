@@ -9,4 +9,4 @@ crate-type = ["staticlib"]
 [dependencies]
 kodi-addon-logger = { path = "../kodi-addon-logger-rs" }
 widevine-ffi = { git = "https://codeberg.org/dobo/widevine-rs.git", rev = "b3833d285a0ab22348cd020602f71564421d7749" }
-playready-ffi = "0.2.1"
+playready-ffi = "0.3.0"
