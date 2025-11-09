@@ -130,7 +130,7 @@ bool adaptive::AdaptiveStream::DownloadImpl(const DownloadInfo& downloadInfo,
       {
         if (downloadData) // Write the data in to the string
         {
-          downloadData->insert(downloadData->end(), bufferData.begin(), bufferData.end());
+          downloadData->insert(downloadData->end(), bufferData.begin(), bufferData.begin() + bytesRead);
         }
         else // Write the data to the segment buffer
         {
