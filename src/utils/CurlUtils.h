@@ -32,7 +32,7 @@ enum class ReadStatus
   ERROR,
 };
 
-constexpr size_t BUFFER_SIZE_32 = 32 * 1024; // 32 Kbyte
+constexpr size_t BUFFER_SIZE_32 = 512 * 1024; // 32 Kbyte
 
 class ATTR_DLL_LOCAL CUrl
 {
