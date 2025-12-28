@@ -859,14 +859,8 @@ AP4_Result CLinearReader::SeekSample(AP4_UI32 track_id, AP4_UI64 ts, AP4_Ordinal
   {
     tracker->m_NextSampleIndex = tracker->m_SampleTable->GetSampleCount();
 
-    const bool isOwned = tracker->m_SampleTableIsOwned;
-    // Temporarily set m_SampleTableIsOwned to false to prevent "Advance" method
-    // from deleting the tracker sample table
-    tracker->m_SampleTableIsOwned = false;
-
     if (AP4_FAILED(result = Advance()))
     {
-      tracker->m_SampleTableIsOwned = isOwned;
       return result;
     }
     // Ensure that Advance has populated the sample table
@@ -876,7 +870,6 @@ AP4_Result CLinearReader::SeekSample(AP4_UI32 track_id, AP4_UI64 ts, AP4_Ordinal
       return AP4_ERROR_INVALID_STATE;
     }
 
-    tracker->m_SampleTableIsOwned = isOwned;
     samplesCount = tracker->m_SampleTable->GetSampleCount();
 
     if (samplesCount == 0)
