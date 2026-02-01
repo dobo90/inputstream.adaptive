@@ -55,7 +55,7 @@ void CRepresentationChooserFixedRes::PostInit()
 PLAYLIST::CRepresentation* CRepresentationChooserFixedRes::GetNextRepresentation(
     PLAYLIST::CAdaptationSet* adp, PLAYLIST::CRepresentation* currentRep)
 {
-  if (currentRep)
+  if (currentRep && currentRep->isPlayable)
     return currentRep;
 
   std::pair<int, int> resolution{m_screenResMax};
