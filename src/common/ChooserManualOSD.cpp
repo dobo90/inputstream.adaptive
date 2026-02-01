@@ -76,7 +76,7 @@ void CRepresentationChooserManualOSD::PostInit()
 PLAYLIST::CRepresentation* CRepresentationChooserManualOSD::GetNextRepresentation(
     PLAYLIST::CAdaptationSet* adp, PLAYLIST::CRepresentation* currentRep)
 {
-  if (currentRep)
+  if (currentRep && currentRep->isPlayable)
     return currentRep;
 
   CRepresentationSelector selector(m_screenWidth, m_screenHeight);
