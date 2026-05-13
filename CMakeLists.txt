@@ -12,6 +12,11 @@ include(FetchContent)
 FetchContent_Declare(Corrosion GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git GIT_TAG v0.6.1)
 FetchContent_MakeAvailable(Corrosion)
 
+if (UNIX)
+  # Workaround Rust bugs: https://github.com/rust-lang/rust/issues/91979, https://github.com/rust-lang/rust/issues/134820
+  add_link_options("-Wl,-z,nodelete")
+endif()
+
 option(BUILD_TESTING "Build the testing tree." ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR})
 set(CMAKE_FIND_FRAMEWORK LAST)
