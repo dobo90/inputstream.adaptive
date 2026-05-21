@@ -1,0 +1,30 @@
+From 6fd824efcd9b903f9a06220f5b3a0d2c62c2116b Mon Sep 17 00:00:00 2001
+From: Dobroslaw Kijowski <dobo90@gmail.com>
+Date: Wed, 20 May 2026 14:26:33 +0200
+Subject: [PATCH 3/3] Fix SampleBuffer leak in AP4_LinearReader::Tracker
+ destructor
+
+Make ~Tracker() call m_Samples.DeleteReferences() and delete
+m_NextSample. SampleBuffer objects buffered in the sample queue
+but never popped were leaked when the reader was destroyed.
+Reproducible with included audio+video fmp4 streams.
+---
+ Source/C++/Core/Ap4LinearReader.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/Source/C++/Core/Ap4LinearReader.cpp b/Source/C++/Core/Ap4LinearReader.cpp
+index aec416bb..b38e7ce1 100644
+--- a/Source/C++/Core/Ap4LinearReader.cpp
++++ b/Source/C++/Core/Ap4LinearReader.cpp
+@@ -629,6 +629,8 @@ AP4_LinearReader::FindTracker(AP4_UI32 track_id)
+ AP4_LinearReader::Tracker::~Tracker()
+ {
+     if (m_SampleTableIsOwned) delete m_SampleTable;
++    m_Samples.DeleteReferences();
++    delete m_NextSample;
+     delete m_Reader;
+ }
+ 
+-- 
+2.54.0
+
