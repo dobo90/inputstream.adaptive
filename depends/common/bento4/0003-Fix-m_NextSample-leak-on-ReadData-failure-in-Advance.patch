@@ -1,0 +1,28 @@
+From 405e903ae6f815848d5ee7094c9e90c0fd2bb0b5 Mon Sep 17 00:00:00 2001
+From: Dobroslaw Kijowski <dobo90@gmail.com>
+Date: Wed, 20 May 2026 14:26:42 +0200
+Subject: [PATCH 3/3] Fix m_NextSample leak on ReadData failure in Advance()
+
+When ReadData() fails after a sample was allocated via
+new AP4_Sample at the top of the Advance() loop, the error
+path set m_NextSample to NULL without deleting the pointer.
+Add delete before nulling the pointer.
+---
+ Source/C++/Core/Ap4LinearReader.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Source/C++/Core/Ap4LinearReader.cpp b/Source/C++/Core/Ap4LinearReader.cpp
+index 891923b1..fa7f8639 100644
+--- a/Source/C++/Core/Ap4LinearReader.cpp
++++ b/Source/C++/Core/Ap4LinearReader.cpp
+@@ -469,6 +469,7 @@ AP4_LinearReader::Advance(bool read_data)
+             if (AP4_FAILED(result)) {
+                 buffer->m_Sample = nullptr;
+                 delete buffer;
++                delete next_tracker->m_NextSample;
+                 next_tracker->m_NextSample = NULL;
+                 return result;
+             }
+-- 
+2.54.0
+
