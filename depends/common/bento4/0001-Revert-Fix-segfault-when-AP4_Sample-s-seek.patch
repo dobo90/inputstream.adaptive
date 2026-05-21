@@ -1,0 +1,25 @@
+From 7258a7fb8eeb331ece94325559a32a50cd7bedcd Mon Sep 17 00:00:00 2001
+From: Dobroslaw Kijowski <dobo90@gmail.com>
+Date: Mon, 13 Jul 2026 21:51:04 +0200
+Subject: [PATCH] Revert "Fix segfault when AP4_Sample's seek"
+
+This reverts commit 2110c3a0ef787dbb23dd8fa729c3f9fb34bd7f57.
+---
+ Source/C++/Core/Ap4LinearReader.cpp | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/Source/C++/Core/Ap4LinearReader.cpp b/Source/C++/Core/Ap4LinearReader.cpp
+index 891923b1..b38e7ce1 100644
+--- a/Source/C++/Core/Ap4LinearReader.cpp
++++ b/Source/C++/Core/Ap4LinearReader.cpp
+@@ -467,7 +467,6 @@ AP4_LinearReader::Advance(bool read_data)
+                 result = buffer->m_Sample->ReadData(buffer->m_Data);
+             }
+             if (AP4_FAILED(result)) {
+-                buffer->m_Sample = nullptr;
+                 delete buffer;
+                 next_tracker->m_NextSample = NULL;
+                 return result;
+-- 
+2.55.0
+
