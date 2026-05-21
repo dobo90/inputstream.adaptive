@@ -1,0 +1,25 @@
+From 92b2209ad1b109c76f5137fb47c3c09390632781 Mon Sep 17 00:00:00 2001
+From: Sisyphus-wang <43361974+Sisyphus-wang@users.noreply.github.com>
+Date: Sun, 20 Jul 2025 17:38:59 +0800
+Subject: [PATCH 2/3] Update Ap4LinearReader.cpp
+
+Fix heap-use-after-free in Ap4LinearReader.cpp:436
+---
+ Source/C++/Core/Ap4LinearReader.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Source/C++/Core/Ap4LinearReader.cpp b/Source/C++/Core/Ap4LinearReader.cpp
+index da2d5ba9..aec416bb 100644
+--- a/Source/C++/Core/Ap4LinearReader.cpp
++++ b/Source/C++/Core/Ap4LinearReader.cpp
+@@ -468,6 +468,7 @@ AP4_LinearReader::Advance(bool read_data)
+             }
+             if (AP4_FAILED(result)) {
+                 delete buffer;
++                next_tracker->m_NextSample = NULL;
+                 return result;
+             }
+ 
+-- 
+2.54.0
+
