@@ -111,6 +111,8 @@ void SESSION::CStream::UnlinkStream()
     }
     else if (linkStreamReader->GetType() == ISampleReader::Type::FMP4)
     {
+      if (m_streamReader)
+        m_streamReader->WaitReadSampleAsyncComplete();
       m_streamReader.reset();
     }
     else
