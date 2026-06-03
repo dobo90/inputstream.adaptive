@@ -64,10 +64,14 @@ DRM::DRMInfo* GetDRMInfoByKS(std::vector<DRM::DRMInfo>& drmInfos, std::string_vi
 std::vector<DRM::DRMInfo> GetDRMInfosByKS(std::vector<DRM::DRMInfo>& drmInfos, std::string_view keySystem)
 {
   std::vector<DRM::DRMInfo> ret;
+
+  std::copy_if(drmInfos.begin(), drmInfos.end(), std::back_inserter(ret),
+               [&](const DRM::DRMInfo& info) { return info.keySystem == keySystem; });
+
   // If no key system is provided its assumend CENC content compatible with any DRM
   std::copy_if(drmInfos.begin(), drmInfos.end(), std::back_inserter(ret),
-               [&](const DRM::DRMInfo& info)
-               { return info.keySystem == keySystem || info.keySystem.empty(); });
+               [&](const DRM::DRMInfo& info) { return info.keySystem.empty(); });
+
   return ret;
 }
 
