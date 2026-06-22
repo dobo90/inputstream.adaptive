@@ -180,11 +180,6 @@ bool SESSION::CSession::CheckPlayableStreams(PLAYLIST::CPeriod* period)
 {
   auto& kodiPropCfg = CSrvBroker::GetKodiProps().GetConfig();
 
-  if (kodiPropCfg.resolutionLimit == 0)
-  {
-    return true;
-  }
-
   for (auto& adp : period->GetAdaptationSets())
   {
     if (adp->GetStreamType() == StreamType::NOTYPE)
